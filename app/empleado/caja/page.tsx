@@ -145,12 +145,14 @@ export default function CajaPage() {
       show("Estacionamiento iniciado", "success");
       setModalEstacionamiento(false);
       if (clienteActivo?.celular) {
+        const labelTarifa: Record<string, string> = { fraccion: "⏱️ Por minuto", completa: "🅿️ Estadía completa", media: "½ Media estadía" };
         const msg =
           `🅿️ *¡Ingreso registrado!*\n\n` +
           `👋 Hola *${clienteActivo.nombre} ${clienteActivo.apellido}*\n` +
           `🚗 *Patente:* ${estPatente}\n` +
           `📅 *Fecha:* ${format(ahora, "dd/MM/yyyy")}\n` +
-          `⏰ *Hora de entrada:* ${format(ahora, "HH:mm")}\n\n` +
+          `⏰ *Hora de entrada:* ${format(ahora, "HH:mm")}\n` +
+          `💳 *Tarifa:* ${labelTarifa[estTipoPrecio]}\n\n` +
           `✅ Te avisamos cuando retires el vehículo. ¡Gracias!`;
         const numero = clienteActivo.celular.replace(/\D/g, "");
         setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
@@ -185,10 +187,12 @@ export default function CajaPage() {
       show(`Estacionamiento finalizado: ${formatMonto(total)}`, "success");
       setModalFinalizar(null);
       if (mov.cliente?.celular) {
+        const labelTarifa: Record<string, string> = { fraccion: "⏱️ Por minuto", completa: "🅿️ Estadía completa", media: "½ Media estadía" };
         const msg =
           `🏁 *¡Egreso registrado!*\n\n` +
           `👋 Hola *${mov.cliente.nombre} ${mov.cliente.apellido}*\n` +
           `🚗 *Patente:* ${mov.patente}\n` +
+          `💳 *Tarifa:* ${labelTarifa[mov.descripcion || "fraccion"] || "⏱️ Por minuto"}\n` +
           `🟢 *Entrada:* ${format(entrada, "HH:mm")}\n` +
           `🔴 *Salida:* ${format(salida, "HH:mm")}\n` +
           `⏱️ *Tiempo:* ${minutos} min\n` +
