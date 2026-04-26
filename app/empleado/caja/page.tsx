@@ -52,6 +52,7 @@ export default function CajaPage() {
   // Estado estacionamiento
   const [estPatente, setEstPatente] = useState("");
   const [estCliente, setEstCliente] = useState<{ nombre: string; apellido: string; celular: string; tipo_vehiculo: string } | null>(null);
+  const [estTipoPrecio, setEstTipoPrecio] = useState<"fraccion" | "completa" | "media">("fraccion");
   const [guardandoEst, setGuardandoEst] = useState(false);
 
   // Estado movimiento
@@ -61,6 +62,8 @@ export default function CajaPage() {
   const [movFecha, setMovFecha] = useState(format(new Date(), "yyyy-MM-dd"));
   const [guardandoMov, setGuardandoMov] = useState(false);
   const [tarifa, setTarifa] = useState(50);
+  const [precioCompleta, setPrecioCompleta] = useState(2000);
+  const [precioMedia, setPrecioMedia] = useState(1000);
 
   useEffect(() => {
     Promise.all([
@@ -69,6 +72,8 @@ export default function CajaPage() {
     ]).then(([c, cfg]) => {
       setConceptos(c);
       setTarifa(parseFloat(cfg.tarifa_estacionamiento_por_minuto) || 50);
+      setPrecioCompleta(parseFloat(cfg.precio_estadia_completa) || 2000);
+      setPrecioMedia(parseFloat(cfg.precio_media_estadia) || 1000);
     });
   }, []);
 
@@ -116,7 +121,7 @@ export default function CajaPage() {
     const res = await fetch("/api/movimientos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tipo: "estacionamiento", patente: estPatente, monto: 0, horaEntrada: ahora.toISOString() }),
+      body: JSON.stringify({ tipo: "estacionamiento", patente: estPatente, monto: 0, descripcion: estTipoPrecio, horaEntrada: ahora.toISOString() }),
     });
     if (res.ok) {
       show("Estacionamiento iniciado", "success");
@@ -132,7 +137,7 @@ export default function CajaPage() {
         const numero = estCliente.celular.replace(/\D/g, "");
         setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
       }
-      setEstPatente(""); setEstCliente(null);
+      setEstPatente(""); setEstCliente(null); setEstTipoPrecio("fraccion");
       cargarMovimientos();
     } else {
       show("Error al registrar estacionamiento", "error");
@@ -140,11 +145,18 @@ export default function CajaPage() {
     setGuardandoEst(false);
   };
 
+  const calcularTotal = (mov: Movimiento, entrada: Date, salida: Date) => {
+    const minutos = Math.ceil((salida.getTime() - entrada.getTime()) / 60000);
+    const tipo = mov.descripcion;
+    if (tipo === "completa") return { total: precioCompleta, minutos };
+    if (tipo === "media") return { total: precioMedia, minutos };
+    return { total: minutos * tarifa, minutos };
+  };
+
   const handleFinalizarEstacionamiento = async (mov: Movimiento) => {
     const entrada = new Date(mov.horaEntrada!);
     const salida = new Date();
-    const minutos = Math.ceil((salida.getTime() - entrada.getTime()) / 60000);
-    const total = minutos * tarifa;
+    const { total, minutos } = calcularTotal(mov, entrada, salida);
     const res = await fetch(`/api/movimientos/${mov.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -435,6 +447,30 @@ export default function CajaPage() {
           {estPatente.length >= 6 && !estCliente && (
             <p className="text-sm text-amber-600">Patente no registrada — se guardará sin datos de cliente.</p>
           )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de tarifa *</label>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { value: "fraccion", label: "⏱️ Por minuto", sub: `$${tarifa}/min` },
+                { value: "completa", label: "🅿️ Estadía completa", sub: formatMonto(precioCompleta) },
+                { value: "media", label: "½ Media estadía", sub: formatMonto(precioMedia) },
+              ] as const).map((op) => (
+                <button
+                  key={op.value}
+                  type="button"
+                  onClick={() => setEstTipoPrecio(op.value)}
+                  className={`rounded-xl border-2 p-3 text-center transition-colors ${
+                    estTipoPrecio === op.value
+                      ? "border-green-500 bg-green-50 text-green-800"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="text-xs font-semibold">{op.label}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{op.sub}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="text-sm text-gray-500">Se registra la hora de entrada automáticamente.</p>
           <button
             onClick={handleGuardarEstacionamiento}
@@ -506,8 +542,8 @@ export default function CajaPage() {
         {modalFinalizar && (() => {
           const entrada = new Date(modalFinalizar.horaEntrada!);
           const salida = new Date();
-          const minutos = Math.ceil((salida.getTime() - entrada.getTime()) / 60000);
-          const total = minutos * tarifa;
+          const { total, minutos } = calcularTotal(modalFinalizar, entrada, salida);
+          const labelTipo: Record<string, string> = { fraccion: "Por minuto", completa: "Estadía completa", media: "Media estadía" };
           return (
             <div className="space-y-4">
               <div className="bg-green-50 rounded-xl p-4 space-y-2 text-sm">
@@ -517,6 +553,10 @@ export default function CajaPage() {
                     <span className="font-mono font-bold">{modalFinalizar.patente}</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tarifa</span>
+                  <span className="font-medium">{labelTipo[modalFinalizar.descripcion || "fraccion"] || "Por minuto"}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Entrada</span>
                   <span>{format(entrada, "HH:mm")}</span>

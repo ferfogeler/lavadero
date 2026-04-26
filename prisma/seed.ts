@@ -25,6 +25,8 @@ async function main() {
     { clave: "horario_apertura", valor: "08:00" },
     { clave: "horario_cierre", valor: "20:00" },
     { clave: "tarifa_estacionamiento_por_minuto", valor: "50" },
+    { clave: "precio_estadia_completa", valor: "2000" },
+    { clave: "precio_media_estadia", valor: "1000" },
     { clave: "url_base", valor: "http://localhost:3000" },
   ];
   for (const c of configs) {

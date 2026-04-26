@@ -8,7 +8,9 @@ const CAMPOS = [
   { clave: "whatsapp_lavadero", label: "WhatsApp del lavadero", placeholder: "3765061400", type: "text" },
   { clave: "horario_apertura", label: "Horario de apertura", placeholder: "08:00", type: "time" },
   { clave: "horario_cierre", label: "Horario de cierre", placeholder: "20:00", type: "time" },
-  { clave: "tarifa_estacionamiento_por_minuto", label: "Tarifa estacionamiento ($ por minuto)", placeholder: "50", type: "number" },
+  { clave: "tarifa_estacionamiento_por_minuto", label: "Tarifa estacionamiento — fracción por minuto ($)", placeholder: "50", type: "number" },
+  { clave: "precio_estadia_completa", label: "Tarifa estacionamiento — estadía completa ($)", placeholder: "2000", type: "number" },
+  { clave: "precio_media_estadia", label: "Tarifa estacionamiento — media estadía ($)", placeholder: "1000", type: "number" },
   { clave: "url_base", label: "URL base del sistema", placeholder: "https://milavadero.easypanel.host", type: "url" },
 ];
 
