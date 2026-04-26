@@ -100,7 +100,9 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
   const handleCancelar = async () => {
     setProcesando(true);
     const fechaFmt = turno ? format(new Date(turno.fecha), "dd/MM/yyyy") : "";
-    const hora = turno?.hora_inicio ? turno.hora_inicio.slice(11, 16) : "";
+    const hora = turno?.hora_inicio
+      ? (turno.hora_inicio.includes("T") ? turno.hora_inicio.slice(11, 16) : turno.hora_inicio.slice(0, 5))
+      : "";
     const res = await fetch(`/api/turnos/token/${params.token}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -135,8 +137,10 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
     </div>
   );
 
-  const fechaTurno = format(new Date(turno.fecha + "T00:00:00"), "dd/MM/yyyy");
-  const horaTurno = turno.hora_inicio.slice(11, 16);
+  const fechaTurno = format(new Date(turno.fecha), "dd/MM/yyyy");
+  const horaTurno = turno.hora_inicio.includes("T")
+    ? turno.hora_inicio.slice(11, 16)
+    : turno.hora_inicio.slice(0, 5);
   const puedeModificar = ["pendiente", "confirmado"].includes(turno.estado);
 
   return (

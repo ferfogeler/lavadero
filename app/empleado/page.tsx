@@ -246,11 +246,15 @@ export default function EmpleadoTurnosPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Fecha</span>
-                <span>{format(new Date(turnoSeleccionado.fecha + "T00:00:00"), "dd/MM/yyyy")}</span>
+                <span>{format(new Date(turnoSeleccionado.fecha), "dd/MM/yyyy")}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Horario</span>
-                <span>{turnoSeleccionado.hora_inicio.slice(11, 16)} – {turnoSeleccionado.hora_fin.slice(11, 16)}</span>
+                <span>
+                  {turnoSeleccionado.hora_inicio.includes("T") ? turnoSeleccionado.hora_inicio.slice(11, 16) : turnoSeleccionado.hora_inicio.slice(0, 5)}
+                  {" – "}
+                  {turnoSeleccionado.hora_fin.includes("T") ? turnoSeleccionado.hora_fin.slice(11, 16) : turnoSeleccionado.hora_fin.slice(0, 5)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Estado</span>
