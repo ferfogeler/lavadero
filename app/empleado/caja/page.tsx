@@ -52,6 +52,10 @@ export default function CajaPage() {
   // Estado estacionamiento
   const [estPatente, setEstPatente] = useState("");
   const [estCliente, setEstCliente] = useState<{ nombre: string; apellido: string; celular: string; tipo_vehiculo: string } | null>(null);
+  const [estNuevoNombre, setEstNuevoNombre] = useState("");
+  const [estNuevoApellido, setEstNuevoApellido] = useState("");
+  const [estNuevoCelular, setEstNuevoCelular] = useState("");
+  const [estNuevoTipoVehiculo, setEstNuevoTipoVehiculo] = useState("auto");
   const [estTipoPrecio, setEstTipoPrecio] = useState<"fraccion" | "completa" | "media">("fraccion");
   const [guardandoEst, setGuardandoEst] = useState(false);
 
@@ -103,6 +107,7 @@ export default function CajaPage() {
     const upper = v.toUpperCase();
     setEstPatente(upper);
     setEstCliente(null);
+    setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); setEstNuevoTipoVehiculo("auto");
     if (upper.length >= 6) {
       const c = await buscarCliente(upper);
       setEstCliente(c);
@@ -112,6 +117,24 @@ export default function CajaPage() {
   const handleGuardarEstacionamiento = async () => {
     if (!estPatente) { show("La patente es obligatoria", "error"); return; }
     setGuardandoEst(true);
+
+    // Si no hay cliente registrado y se ingresaron datos, crear el cliente
+    let clienteActivo = estCliente;
+    if (!estCliente && estNuevoNombre && estNuevoApellido) {
+      const resCliente = await fetch("/api/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patente: estPatente,
+          nombre: estNuevoNombre,
+          apellido: estNuevoApellido,
+          celular: estNuevoCelular || null,
+          tipo_vehiculo: estNuevoTipoVehiculo,
+        }),
+      });
+      if (resCliente.ok) clienteActivo = await resCliente.json();
+    }
+
     const ahora = new Date();
     const res = await fetch("/api/movimientos", {
       method: "POST",
@@ -121,18 +144,19 @@ export default function CajaPage() {
     if (res.ok) {
       show("Estacionamiento iniciado", "success");
       setModalEstacionamiento(false);
-      if (estCliente?.celular) {
+      if (clienteActivo?.celular) {
         const msg =
           `🅿️ *¡Ingreso registrado!*\n\n` +
-          `👋 Hola *${estCliente.nombre} ${estCliente.apellido}*\n` +
+          `👋 Hola *${clienteActivo.nombre} ${clienteActivo.apellido}*\n` +
           `🚗 *Patente:* ${estPatente}\n` +
           `📅 *Fecha:* ${format(ahora, "dd/MM/yyyy")}\n` +
           `⏰ *Hora de entrada:* ${format(ahora, "HH:mm")}\n\n` +
           `✅ Te avisamos cuando retires el vehículo. ¡Gracias!`;
-        const numero = estCliente.celular.replace(/\D/g, "");
+        const numero = clienteActivo.celular.replace(/\D/g, "");
         setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
       }
       setEstPatente(""); setEstCliente(null); setEstTipoPrecio("fraccion");
+      setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); setEstNuevoTipoVehiculo("auto");
       cargarMovimientos();
     } else {
       show("Error al registrar estacionamiento", "error");
@@ -418,7 +442,7 @@ export default function CajaPage() {
       </div>
 
       {/* Modal estacionamiento */}
-      <Modal open={modalEstacionamiento} onClose={() => { setModalEstacionamiento(false); setEstPatente(""); setEstCliente(null); }} title="Nuevo estacionamiento">
+      <Modal open={modalEstacionamiento} onClose={() => { setModalEstacionamiento(false); setEstPatente(""); setEstCliente(null); setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); setEstNuevoTipoVehiculo("auto"); }} title="Nuevo estacionamiento">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Patente *</label>
@@ -440,7 +464,52 @@ export default function CajaPage() {
             </div>
           )}
           {estPatente.length >= 6 && !estCliente && (
-            <p className="text-sm text-amber-600">Patente no registrada — se guardará sin datos de cliente.</p>
+            <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-medium text-amber-700">Patente no registrada — ingresá los datos del cliente</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
+                  <input
+                    value={estNuevoNombre}
+                    onChange={(e) => setEstNuevoNombre(e.target.value)}
+                    placeholder="Juan"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Apellido *</label>
+                  <input
+                    value={estNuevoApellido}
+                    onChange={(e) => setEstNuevoApellido(e.target.value)}
+                    placeholder="Pérez"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Celular</label>
+                <input
+                  value={estNuevoCelular}
+                  onChange={(e) => setEstNuevoCelular(e.target.value)}
+                  placeholder="3765000000"
+                  type="tel"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de vehículo *</label>
+                <select
+                  value={estNuevoTipoVehiculo}
+                  onChange={(e) => setEstNuevoTipoVehiculo(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  <option value="auto">Auto</option>
+                  <option value="camioneta">Camioneta</option>
+                  <option value="suv">SUV</option>
+                  <option value="moto">Moto</option>
+                </select>
+              </div>
+            </div>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de tarifa *</label>
