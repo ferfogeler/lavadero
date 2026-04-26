@@ -42,8 +42,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     include: { cliente: true },
   });
 
-  // Si se confirma, crear movimiento de caja automáticamente
-  if (estado === "confirmado" && !turno.movimiento) {
+  // Si se confirma o completa, crear movimiento de caja automáticamente
+  if ((estado === "confirmado" || estado === "completado") && !turno.movimiento) {
     const config = await prisma.configuracionLavado.findUnique({
       where: { tipo_vehiculo: turno.tipo_vehiculo },
     });

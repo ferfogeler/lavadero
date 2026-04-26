@@ -9,24 +9,62 @@ export async function GET(req: NextRequest) {
   const desde = searchParams.get("desde");
   const hasta = searchParams.get("hasta");
 
-  const where: Record<string, unknown> = {};
+  const whereMovimiento: Record<string, unknown> = {};
+  let fechaInicio: Date | null = null;
+  let fechaFin: Date | null = null;
 
   if (fecha) {
-    const d = new Date(fecha);
-    const d2 = new Date(fecha);
-    d2.setDate(d2.getDate() + 1);
-    where.fecha = { gte: d, lt: d2 };
+    fechaInicio = new Date(fecha);
+    fechaFin = new Date(fecha);
+    fechaFin.setDate(fechaFin.getDate() + 1);
+    whereMovimiento.fecha = { gte: fechaInicio, lt: fechaFin };
   } else if (desde && hasta) {
-    const h = new Date(hasta);
-    h.setDate(h.getDate() + 1);
-    where.fecha = { gte: new Date(desde), lt: h };
+    fechaInicio = new Date(desde);
+    fechaFin = new Date(hasta);
+    fechaFin.setDate(fechaFin.getDate() + 1);
+    whereMovimiento.fecha = { gte: fechaInicio, lt: fechaFin };
   }
 
   const movimientos = await prisma.movimientoCaja.findMany({
-    where,
+    where: whereMovimiento,
     include: { cliente: true, concepto: true, turno: true },
     orderBy: { fecha: "desc" },
   });
+
+  // Incluir turnos confirmados/completados sin movimiento de caja
+  if (fechaInicio && fechaFin) {
+    const turnosSinMovimiento = await prisma.turno.findMany({
+      where: {
+        fecha: { gte: fechaInicio, lt: fechaFin },
+        estado: { in: ["confirmado", "completado"] },
+        movimiento: null,
+      },
+      include: { cliente: true },
+    });
+
+    if (turnosSinMovimiento.length > 0) {
+      const configs = await prisma.configuracionLavado.findMany();
+      const precioMap = Object.fromEntries(configs.map((c) => [c.tipo_vehiculo, c.precio]));
+
+      const turnosComoMov = turnosSinMovimiento.map((t) => ({
+        id: -(t.id),
+        fecha: t.fecha,
+        tipo: "lavado",
+        patente: t.patente,
+        conceptoId: null,
+        monto: (precioMap[t.tipo_vehiculo] ?? 0).toString(),
+        descripcion: `Lavado ${t.tipo_vehiculo} - ${t.patente ?? "s/patente"}`,
+        horaEntrada: null,
+        horaSalida: null,
+        turnoId: t.id,
+        cliente: t.cliente,
+        concepto: null,
+        turno: t,
+      }));
+
+      return NextResponse.json([...movimientos, ...turnosComoMov]);
+    }
+  }
 
   return NextResponse.json(movimientos);
 }
