@@ -22,10 +22,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (
-          username === "empleado" &&
+          username === "recepcion" &&
           password === process.env.EMPLEADO_PASSWORD
         ) {
-          return { id: "empleado", name: "Empleado", email: "empleado@lavadero.local", role: "empleado" };
+          return { id: "recepcion", name: "Recepción", email: "recepcion@lavadero.local", role: "empleado" };
         }
 
         return null;

@@ -37,7 +37,7 @@ function LoginForm() {
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="empleado / admin"
+          placeholder="recepcion / admin"
           autoComplete="username"
           required
           className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
