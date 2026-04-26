@@ -112,19 +112,17 @@ export function ClientesTabla() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">👥 Clientes</h1>
-        <div className="flex gap-2 flex-1 max-w-md">
-          <input
-            value={busqueda}
-            onChange={(e) => handleBuscar(e.target.value)}
-            placeholder="Buscar por patente, nombre o apellido..."
-            className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 shrink-0">👥 Clientes</h1>
+        <input
+          value={busqueda}
+          onChange={(e) => handleBuscar(e.target.value)}
+          placeholder="Buscar por patente, nombre o apellido..."
+          className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
         <button
           onClick={abrirNuevo}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2 text-sm font-medium"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2 text-sm font-medium shrink-0"
         >
           + Nuevo cliente
         </button>
@@ -204,7 +202,7 @@ export function ClientesTabla() {
               className="w-full border rounded-xl px-4 py-3 font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
               <input

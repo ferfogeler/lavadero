@@ -252,7 +252,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
                   {!nuevaFecha && <p className="text-sm text-gray-400">Elegí una fecha</p>}
                   {nuevaFecha && loadingSlots && <Spinner />}
                   {nuevaFecha && !loadingSlots && (
-                    <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-48 overflow-y-auto">
                       {slots.length === 0 && <p className="col-span-3 text-sm text-gray-400">Sin disponibilidad</p>}
                       {slots.map((s) => (
                         <button

@@ -19,13 +19,13 @@ function AdminNav() {
   return (
     <nav className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
-        <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
           <span className="font-bold mr-3 shrink-0">🚿 Admin</span>
           {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 path === l.href ? "bg-blue-600" : "hover:bg-gray-700"
               }`}
             >

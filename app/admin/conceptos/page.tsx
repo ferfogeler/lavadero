@@ -84,6 +84,7 @@ export default function ConceptosPage() {
         </button>
       </div>
       <div className="bg-white rounded-xl shadow border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b">
@@ -120,6 +121,7 @@ export default function ConceptosPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       <Modal open={modalNuevo} onClose={() => setModalNuevo(false)} title="Nuevo concepto">
         <div className="space-y-4">

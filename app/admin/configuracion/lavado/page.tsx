@@ -80,7 +80,7 @@ export default function ConfiguracionLavadoPage() {
                       type="number"
                       value={c.precio}
                       onChange={(e) => handleChange(c.tipo_vehiculo, "precio", e.target.value)}
-                      className="w-32 border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full max-w-[8rem] border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       min="0"
                     />
                   </div>
@@ -90,7 +90,7 @@ export default function ConfiguracionLavadoPage() {
                     type="number"
                     value={c.duracion_minutos}
                     onChange={(e) => handleChange(c.tipo_vehiculo, "duracion_minutos", e.target.value)}
-                    className="w-24 border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full max-w-[6rem] border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="1"
                   />
                 </td>

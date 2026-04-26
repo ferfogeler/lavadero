@@ -267,7 +267,7 @@ export default function ReservaPage() {
                     </div>
                   )}
                   {fechaSeleccionada && !loadingSlots && (
-                    <div className="border rounded-xl p-3 grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                    <div className="border rounded-xl p-3 grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                       {slots.length === 0 && (
                         <p className="col-span-3 text-center text-gray-400 text-sm py-4">
                           No hay horarios disponibles para este día
@@ -339,7 +339,7 @@ export default function ReservaPage() {
                     className="w-full border rounded-xl px-4 py-3 font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                     <input

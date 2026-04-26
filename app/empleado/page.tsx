@@ -201,7 +201,7 @@ export default function EmpleadoTurnosPage() {
       {loading ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
       ) : (
-        <div className={`grid gap-4 ${vista === "semana" ? "grid-cols-7" : "grid-cols-1 max-w-xl"}`}>
+        <div className={`grid gap-4 ${vista === "semana" ? "grid-cols-2 sm:grid-cols-4 md:grid-cols-7" : "grid-cols-1 max-w-xl"}`}>
           {diasSemana.map((dia) => (
             <div key={dia.toISOString()} className="min-h-[200px]">
               <div className={`text-sm font-semibold mb-2 py-1 px-2 rounded-lg ${isToday(dia) ? "bg-blue-600 text-white" : "text-gray-600"}`}>
