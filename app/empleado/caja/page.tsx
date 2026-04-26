@@ -42,6 +42,7 @@ export default function CajaPage() {
   const [modalFinalizar, setModalFinalizar] = useState<Movimiento | null>(null);
   const [modalEditar, setModalEditar] = useState<Movimiento | null>(null);
   const [modalEliminar, setModalEliminar] = useState<Movimiento | null>(null);
+  const [whatsappPendiente, setWhatsappPendiente] = useState<{ url: string; titulo: string } | null>(null);
   const [editMonto, setEditMonto] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editFecha, setEditFecha] = useState("");
@@ -128,7 +129,8 @@ export default function CajaPage() {
           `📅 *Fecha:* ${format(ahora, "dd/MM/yyyy")}\n` +
           `⏰ *Hora de entrada:* ${format(ahora, "HH:mm")}\n\n` +
           `✅ Te avisamos cuando retires el vehículo. ¡Gracias!`;
-        abrirWhatsApp(estCliente.celular, msg);
+        const numero = estCliente.celular.replace(/\D/g, "");
+        setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
       }
       setEstPatente(""); setEstCliente(null);
       cargarMovimientos();
@@ -161,7 +163,8 @@ export default function CajaPage() {
           `⏱️ *Tiempo:* ${minutos} min\n` +
           `💰 *Total cobrado:* ${formatMonto(total)}\n\n` +
           `🙏 ¡Gracias por elegirnos! Hasta la próxima 👋`;
-        abrirWhatsApp(mov.cliente.celular, msg);
+        const numero = mov.cliente.celular.replace(/\D/g, "");
+        setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar egreso al cliente" });
       }
       cargarMovimientos();
     } else {
@@ -613,6 +616,30 @@ export default function CajaPage() {
                 Sí, eliminar
               </button>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal WhatsApp (compatible iOS) */}
+      <Modal open={!!whatsappPendiente} onClose={() => setWhatsappPendiente(null)} title="Enviar WhatsApp">
+        {whatsappPendiente && (
+          <div className="space-y-4 text-center">
+            <p className="text-gray-600 text-sm">Tocá el botón para enviarle el mensaje al cliente.</p>
+            <a
+              href={whatsappPendiente.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWhatsappPendiente(null)}
+              className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3 font-semibold text-lg transition"
+            >
+              💬 {whatsappPendiente.titulo}
+            </a>
+            <button
+              onClick={() => setWhatsappPendiente(null)}
+              className="w-full text-sm text-gray-400 hover:text-gray-600"
+            >
+              Omitir
+            </button>
           </div>
         )}
       </Modal>
