@@ -16,6 +16,7 @@ RUN npm run build
 
 FROM base AS runner
 RUN apk add --no-cache openssl
+RUN npm install -g prisma@6
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -29,7 +30,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --chown=nextjs:nodejs entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
