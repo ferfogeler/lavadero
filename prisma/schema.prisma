@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  patente       String        @id
+  nombre        String
+  apellido      String
+  celular       String
+  tipo_vehiculo TipoVehiculo
+  createdAt     DateTime      @default(now())
+  turnos        Turno[]
+  movimientos   MovimientoCaja[]
+}
+
+model Turno {
+  id                 Int          @id @default(autoincrement())
+  patente            String?
+  cliente            Cliente?     @relation(fields: [patente], references: [patente])
+  tipo_vehiculo      TipoVehiculo
+  fecha              DateTime     @db.Date
+  hora_inicio        DateTime     @db.Time
+  hora_fin           DateTime     @db.Time
+  estado             EstadoTurno  @default(pendiente)
+  creadoPor          CreadoPor    @default(web)
+  tokenModificacion  String       @unique @default(uuid())
+  createdAt          DateTime     @default(now())
+  movimiento         MovimientoCaja?
+}
+
+model MovimientoCaja {
+  id          Int            @id @default(autoincrement())
+  fecha       DateTime       @default(now())
+  tipo        TipoMovimiento
+  patente     String?
+  cliente     Cliente?       @relation(fields: [patente], references: [patente])
+  conceptoId  Int?
+  concepto    Concepto?      @relation(fields: [conceptoId], references: [id])
+  monto       Decimal        @db.Decimal(10, 2)
+  descripcion String?
+  horaEntrada DateTime?
+  horaSalida  DateTime?
+  turnoId     Int?           @unique
+  turno       Turno?         @relation(fields: [turnoId], references: [id])
+}
+
+model Concepto {
+  id           Int            @id @default(autoincrement())
+  nombre       String
+  tipoConcepto TipoConcepto
+  activo       Boolean        @default(true)
+  movimientos  MovimientoCaja[]
+}
+
+model ConfiguracionLavado {
+  tipo_vehiculo     TipoVehiculo @id
+  precio            Decimal      @db.Decimal(10, 2)
+  duracion_minutos  Int
+  activo            Boolean      @default(true)
+}
+
+model ConfiguracionGeneral {
+  clave String @id
+  valor String
+}
+
+enum TipoVehiculo {
+  auto
+  camioneta
+  suv
+  moto
+}
+
+enum EstadoTurno {
+  pendiente
+  confirmado
+  completado
+  cancelado
+}
+
+enum CreadoPor {
+  web
+  empleado
+  admin
+}
+
+enum TipoMovimiento {
+  lavado
+  estacionamiento
+  ingreso
+  egreso
+  gasto
+}
+
+enum TipoConcepto {
+  ingreso
+  egreso
+  gasto
+}
