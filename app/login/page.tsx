@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Spinner } from "@/components/Spinner";
 
 function LoginForm() {
@@ -9,7 +9,6 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/empleado";
 
@@ -23,11 +22,11 @@ function LoginForm() {
       redirect: false,
     });
     if (res?.ok) {
-      router.push(callbackUrl);
+      window.location.href = callbackUrl;
     } else {
       setError("Usuario o contraseña incorrectos");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
