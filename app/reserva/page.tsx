@@ -115,7 +115,13 @@ export default function ReservaPage() {
       const enlace = `${urlBase}/turno/${turno.tokenModificacion}`;
       const fechaFmt = format(fechaSeleccionada!, "dd/MM/yyyy");
       const texto = encodeURIComponent(
-        `Nuevo turno solicitado 🚗\nNombre: ${nombre} ${apellido}\nPatente: ${patente}\nVehículo: ${labelTipoVehiculo(tipoVehiculo!)}\nFecha: ${fechaFmt} a las ${horaSeleccionada}\n\nPara modificar o cancelar:\n${enlace}`
+        `🚿 *¡Turno confirmado!*\n\n` +
+        `👤 *Cliente:* ${nombre} ${apellido}\n` +
+        `🚗 *Patente:* ${patente}\n` +
+        `🏎️ *Vehículo:* ${labelTipoVehiculo(tipoVehiculo!)}\n` +
+        `📅 *Fecha:* ${fechaFmt}\n` +
+        `⏰ *Hora:* ${horaSeleccionada}\n\n` +
+        `🔗 *Modificar o cancelar tu turno:*\n${enlace}`
       );
       window.open(`https://wa.me/${whatsapp}?text=${texto}`, "_blank");
 

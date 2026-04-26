@@ -88,7 +88,14 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
       setVista("detalle");
       show("Turno modificado correctamente", "success");
       const fechaFmt = format(nuevaFecha, "dd/MM/yyyy");
-      const texto = encodeURIComponent(`Turno modificado ✏️\nPatente: ${turno!.patente}\nNueva fecha: ${fechaFmt} a las ${nuevaHora}`);
+      const enlace = `${window.location.origin}/turno/${params.token}`;
+      const texto = encodeURIComponent(
+        `✏️ *Turno modificado*\n\n` +
+        `🚗 *Patente:* ${turno!.patente}\n` +
+        `📅 *Nueva fecha:* ${fechaFmt}\n` +
+        `⏰ *Nuevo horario:* ${nuevaHora}\n\n` +
+        `🔗 Gestionar turno:\n${enlace}`
+      );
       window.open(`https://wa.me/${whatsapp}?text=${texto}`, "_blank");
     } else {
       const e = await res.json();
@@ -112,7 +119,13 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
       setTurno((t) => t ? { ...t, estado: "cancelado" } : t);
       setVista("detalle");
       show("Turno cancelado", "info");
-      const texto = encodeURIComponent(`Turno cancelado ❌\nPatente: ${turno!.patente}\nFecha cancelada: ${fechaFmt} a las ${hora}`);
+      const texto = encodeURIComponent(
+        `❌ *Turno cancelado*\n\n` +
+        `🚗 *Patente:* ${turno!.patente}\n` +
+        `📅 *Fecha cancelada:* ${fechaFmt}\n` +
+        `⏰ *Horario:* ${hora}\n\n` +
+        `🔗 Reservar un nuevo turno:\nhttps://${window.location.host}/reserva`
+      );
       window.open(`https://wa.me/${whatsapp}?text=${texto}`, "_blank");
     } else {
       const e = await res.json();

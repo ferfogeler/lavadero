@@ -112,11 +112,12 @@ export default function CajaPage() {
       setModalEstacionamiento(false);
       if (estCliente?.celular) {
         const msg =
-          `¡Hola ${estCliente.nombre}! 🚗\n` +
-          `Tu vehículo *${estPatente}* ingresó al estacionamiento.\n` +
-          `📅 Fecha: ${format(ahora, "dd/MM/yyyy")}\n` +
-          `⏰ Hora de entrada: ${format(ahora, "HH:mm")}\n\n` +
-          `Te avisamos cuando retires el vehículo.`;
+          `🅿️ *¡Ingreso registrado!*\n\n` +
+          `👋 Hola *${estCliente.nombre} ${estCliente.apellido}*\n` +
+          `🚗 *Patente:* ${estPatente}\n` +
+          `📅 *Fecha:* ${format(ahora, "dd/MM/yyyy")}\n` +
+          `⏰ *Hora de entrada:* ${format(ahora, "HH:mm")}\n\n` +
+          `✅ Te avisamos cuando retires el vehículo. ¡Gracias!`;
         abrirWhatsApp(estCliente.celular, msg);
       }
       setEstPatente(""); setEstCliente(null);
@@ -142,13 +143,14 @@ export default function CajaPage() {
       setModalFinalizar(null);
       if (mov.cliente?.celular) {
         const msg =
-          `¡Hola ${mov.cliente.nombre}! 🚗\n` +
-          `Tu vehículo *${mov.patente}* retiró del estacionamiento.\n` +
-          `⏰ Entrada: ${format(entrada, "HH:mm")}\n` +
-          `⏰ Salida: ${format(salida, "HH:mm")}\n` +
-          `⏱️ Tiempo: ${minutos} min\n` +
-          `💰 Total: ${formatMonto(total)}\n\n` +
-          `¡Gracias por elegirnos! 😊`;
+          `🏁 *¡Egreso registrado!*\n\n` +
+          `👋 Hola *${mov.cliente.nombre} ${mov.cliente.apellido}*\n` +
+          `🚗 *Patente:* ${mov.patente}\n` +
+          `🟢 *Entrada:* ${format(entrada, "HH:mm")}\n` +
+          `🔴 *Salida:* ${format(salida, "HH:mm")}\n` +
+          `⏱️ *Tiempo:* ${minutos} min\n` +
+          `💰 *Total cobrado:* ${formatMonto(total)}\n\n` +
+          `🙏 ¡Gracias por elegirnos! Hasta la próxima 👋`;
         abrirWhatsApp(mov.cliente.celular, msg);
       }
       cargarMovimientos();
