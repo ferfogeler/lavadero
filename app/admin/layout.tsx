@@ -9,6 +9,7 @@ function AdminNav() {
   const links = [
     { href: "/admin", label: "📅 Turnos" },
     { href: "/admin/caja", label: "💰 Caja" },
+    { href: "/admin/clientes", label: "👥 Clientes" },
     { href: "/admin/configuracion/lavado", label: "⚙️ Precios" },
     { href: "/admin/conceptos", label: "🏷️ Conceptos" },
     { href: "/admin/configuracion/general", label: "🔧 General" },

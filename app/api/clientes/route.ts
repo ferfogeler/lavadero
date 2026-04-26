@@ -6,10 +6,17 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q");
+  const take = parseInt(searchParams.get("take") || "20");
   const clientes = await prisma.cliente.findMany({
-    where: q ? { patente: { contains: q.toUpperCase() } } : undefined,
+    where: q ? {
+      OR: [
+        { patente: { contains: q.toUpperCase() } },
+        { nombre: { contains: q, mode: "insensitive" } },
+        { apellido: { contains: q, mode: "insensitive" } },
+      ],
+    } : undefined,
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take,
   });
   return NextResponse.json(clientes);
 }

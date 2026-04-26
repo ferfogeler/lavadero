@@ -10,3 +10,23 @@ export async function GET(_: NextRequest, { params }: { params: { patente: strin
   if (!cliente) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
   return NextResponse.json(cliente);
 }
+
+export async function PUT(req: NextRequest, { params }: { params: { patente: string } }) {
+  const body = await req.json();
+  const { nombre, apellido, celular, tipo_vehiculo } = body;
+  if (!nombre || !apellido || !celular || !tipo_vehiculo) {
+    return NextResponse.json({ error: "Campos requeridos faltantes" }, { status: 400 });
+  }
+  const cliente = await prisma.cliente.update({
+    where: { patente: params.patente.toUpperCase() },
+    data: { nombre, apellido, celular, tipo_vehiculo },
+  });
+  return NextResponse.json(cliente);
+}
+
+export async function DELETE(_: NextRequest, { params }: { params: { patente: string } }) {
+  await prisma.cliente.delete({
+    where: { patente: params.patente.toUpperCase() },
+  });
+  return NextResponse.json({ ok: true });
+}

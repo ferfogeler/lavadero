@@ -12,6 +12,7 @@ function Nav() {
   const links = [
     { href: "/empleado", label: "📅 Turnos" },
     { href: "/empleado/caja", label: "💰 Caja" },
+    { href: "/empleado/clientes", label: "👥 Clientes" },
     ...(isAdmin ? [{ href: "/admin", label: "⚙️ Admin" }] : []),
   ];
 
