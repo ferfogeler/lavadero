@@ -32,7 +32,6 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
   const [nuevaHora, setNuevaHora] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [procesando, setProcesando] = useState(false);
-  const [urlBase, setUrlBase] = useState("http://localhost:3000");
   const [whatsapp, setWhatsapp] = useState("3765061400");
   const { toast, show, hide } = useToast();
 
@@ -42,7 +41,6 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
       fetch("/api/configuracion/general").then((r) => r.json()),
     ]).then(([t, cfg]) => {
       setTurno(t);
-      setUrlBase(cfg.url_base || "http://localhost:3000");
       setWhatsapp(cfg.whatsapp_lavadero || "3765061400");
       setLoading(false);
       if (!t) setError("Turno no encontrado");

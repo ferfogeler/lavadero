@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const desde = searchParams.get("desde");
   const hasta = searchParams.get("hasta");
 
-  let where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = {};
 
   if (fecha) {
     const d = new Date(fecha);

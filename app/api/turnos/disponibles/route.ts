@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [config, configGeneral, turnosDelDia] = await Promise.all([
-    prisma.configuracionLavado.findUnique({ where: { tipo_vehiculo: tipo as any } }),
+    prisma.configuracionLavado.findUnique({ where: { tipo_vehiculo: tipo as "auto" | "camioneta" | "suv" | "moto" } }),
     prisma.configuracionGeneral.findMany(),
     prisma.turno.findMany({
       where: {

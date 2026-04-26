@@ -136,7 +136,7 @@ export default function ConceptosPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
             <select
               value={nuevoTipo}
-              onChange={(e) => setNuevoTipo(e.target.value as any)}
+              onChange={(e) => setNuevoTipo(e.target.value as "ingreso" | "egreso" | "gasto")}
               className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}

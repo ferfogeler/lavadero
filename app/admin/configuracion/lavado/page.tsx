@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Toast, useToast } from "@/components/Toast";
 import { Spinner } from "@/components/Spinner";
-import { labelTipoVehiculo, formatMonto } from "@/lib/utils";
+import { labelTipoVehiculo } from "@/lib/utils";
 
 interface ConfigLavado {
   tipo_vehiculo: string;
@@ -19,7 +19,7 @@ export default function ConfiguracionLavadoPage() {
 
   useEffect(() => {
     fetch("/api/configuracion/lavado").then((r) => r.json()).then((data) => {
-      setConfigs(data.map((c: any) => ({ ...c, precio: Number(c.precio) })));
+      setConfigs(data.map((c: ConfigLavado) => ({ ...c, precio: Number(c.precio) })));
       setLoading(false);
     });
   }, []);

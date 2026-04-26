@@ -44,19 +44,8 @@ export default function EmpleadoTurnosPage() {
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoApellido, setNuevoApellido] = useState("");
   const [nuevoCelular, setNuevoCelular] = useState("");
-  const [configuraciones, setConfiguraciones] = useState<Record<string, any>>({});
   const [guardando, setGuardando] = useState(false);
   const [nuevoStep, setNuevoStep] = useState<1 | 2 | 3>(1);
-
-  useEffect(() => {
-    fetch("/api/configuracion/lavado")
-      .then((r) => r.json())
-      .then((data) => {
-        const cfg: Record<string, any> = {};
-        for (const c of data) cfg[c.tipo_vehiculo] = c;
-        setConfiguraciones(cfg);
-      });
-  }, []);
 
   const cargarTurnos = useCallback(async () => {
     setLoading(true);

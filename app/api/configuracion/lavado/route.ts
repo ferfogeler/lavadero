@@ -13,7 +13,7 @@ export async function PUT(req: NextRequest) {
   const updates = await Promise.all(
     body.map((item: { tipo_vehiculo: string; precio: number; duracion_minutos: number; activo: boolean }) =>
       prisma.configuracionLavado.update({
-        where: { tipo_vehiculo: item.tipo_vehiculo as any },
+        where: { tipo_vehiculo: item.tipo_vehiculo as "auto" | "camioneta" | "suv" | "moto" },
         data: {
           precio: item.precio,
           duracion_minutos: item.duracion_minutos,

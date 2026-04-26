@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const conceptos = await prisma.concepto.findMany({
     where: {
-      ...(tipo ? { tipoConcepto: tipo as any } : {}),
+      ...(tipo ? { tipoConcepto: tipo as "ingreso" | "egreso" | "gasto" } : {}),
       ...(soloActivos ? { activo: true } : {}),
     },
     orderBy: { nombre: "asc" },
