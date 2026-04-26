@@ -16,7 +16,7 @@ interface Movimiento {
   horaEntrada: string | null;
   horaSalida: string | null;
   turnoId: number | null;
-  cliente?: { nombre: string; apellido: string; tipo_vehiculo: string } | null;
+  cliente?: { nombre: string; apellido: string; celular: string; tipo_vehiculo: string } | null;
   concepto?: { nombre: string; tipoConcepto: string } | null;
 }
 
@@ -40,7 +40,7 @@ export default function CajaPage() {
 
   // Estado estacionamiento
   const [estPatente, setEstPatente] = useState("");
-  const [estCliente, setEstCliente] = useState<{ nombre: string; apellido: string; tipo_vehiculo: string } | null>(null);
+  const [estCliente, setEstCliente] = useState<{ nombre: string; apellido: string; celular: string; tipo_vehiculo: string } | null>(null);
   const [guardandoEst, setGuardandoEst] = useState(false);
 
   // Estado movimiento
@@ -93,16 +93,32 @@ export default function CajaPage() {
     }
   };
 
+  const abrirWhatsApp = (celular: string, mensaje: string) => {
+    const numero = celular.replace(/\D/g, "");
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, "_blank");
+  };
+
   const handleGuardarEstacionamiento = async () => {
+    if (!estPatente) { show("La patente es obligatoria", "error"); return; }
     setGuardandoEst(true);
+    const ahora = new Date();
     const res = await fetch("/api/movimientos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tipo: "estacionamiento", patente: estPatente || null, monto: 0, horaEntrada: new Date().toISOString() }),
+      body: JSON.stringify({ tipo: "estacionamiento", patente: estPatente, monto: 0, horaEntrada: ahora.toISOString() }),
     });
     if (res.ok) {
       show("Estacionamiento iniciado", "success");
       setModalEstacionamiento(false);
+      if (estCliente?.celular) {
+        const msg =
+          `¡Hola ${estCliente.nombre}! 🚗\n` +
+          `Tu vehículo *${estPatente}* ingresó al estacionamiento.\n` +
+          `📅 Fecha: ${format(ahora, "dd/MM/yyyy")}\n` +
+          `⏰ Hora de entrada: ${format(ahora, "HH:mm")}\n\n` +
+          `Te avisamos cuando retires el vehículo.`;
+        abrirWhatsApp(estCliente.celular, msg);
+      }
       setEstPatente(""); setEstCliente(null);
       cargarMovimientos();
     } else {
@@ -124,6 +140,17 @@ export default function CajaPage() {
     if (res.ok) {
       show(`Estacionamiento finalizado: ${formatMonto(total)}`, "success");
       setModalFinalizar(null);
+      if (mov.cliente?.celular) {
+        const msg =
+          `¡Hola ${mov.cliente.nombre}! 🚗\n` +
+          `Tu vehículo *${mov.patente}* retiró del estacionamiento.\n` +
+          `⏰ Entrada: ${format(entrada, "HH:mm")}\n` +
+          `⏰ Salida: ${format(salida, "HH:mm")}\n` +
+          `⏱️ Tiempo: ${minutos} min\n` +
+          `💰 Total: ${formatMonto(total)}\n\n` +
+          `¡Gracias por elegirnos! 😊`;
+        abrirWhatsApp(mov.cliente.celular, msg);
+      }
       cargarMovimientos();
     } else {
       show("Error al finalizar estacionamiento", "error");
@@ -317,24 +344,31 @@ export default function CajaPage() {
       <Modal open={modalEstacionamiento} onClose={() => { setModalEstacionamiento(false); setEstPatente(""); setEstCliente(null); }} title="Nuevo estacionamiento">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Patente (opcional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Patente *</label>
             <input
               value={estPatente}
               onChange={(e) => handleEstPatenteChange(e.target.value)}
               placeholder="ABC123"
+              required
               className="w-full border rounded-xl px-4 py-3 font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           {estCliente && (
-            <div className="bg-green-50 rounded-xl p-3 text-sm">
-              <span className="font-medium">{estCliente.nombre} {estCliente.apellido}</span>
-              <span className="text-gray-500 ml-2">{labelTipoVehiculo(estCliente.tipo_vehiculo)}</span>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm space-y-1">
+              <div className="font-semibold text-green-800">{estCliente.nombre} {estCliente.apellido}</div>
+              <div className="text-gray-600">{labelTipoVehiculo(estCliente.tipo_vehiculo)}</div>
+              {estCliente.celular && (
+                <div className="text-gray-500">📱 {estCliente.celular}</div>
+              )}
             </div>
+          )}
+          {estPatente.length >= 6 && !estCliente && (
+            <p className="text-sm text-amber-600">Patente no registrada — se guardará sin datos de cliente.</p>
           )}
           <p className="text-sm text-gray-500">Se registra la hora de entrada automáticamente.</p>
           <button
             onClick={handleGuardarEstacionamiento}
-            disabled={guardandoEst}
+            disabled={guardandoEst || !estPatente}
             className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl py-3 font-medium"
           >
             {guardandoEst ? <Spinner size="sm" /> : "🅿️ Registrar entrada"}

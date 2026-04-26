@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { tipo, patente, conceptoId, monto, descripcion, horaEntrada, horaSalida, fecha } = body;
 
-  if (!tipo || !monto) {
+  if (!tipo || monto === undefined || monto === null) {
     return NextResponse.json({ error: "tipo y monto son requeridos" }, { status: 400 });
   }
 
