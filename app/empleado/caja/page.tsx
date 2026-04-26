@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
 import { Modal } from "@/components/Modal";
 import { Toast, useToast } from "@/components/Toast";
 import { Spinner } from "@/components/Spinner";
@@ -27,6 +28,9 @@ interface Concepto {
 }
 
 export default function CajaPage() {
+  const { data: session } = useSession();
+  const isAdmin = (session?.user as { role?: string })?.role === "admin";
+
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [loading, setLoading] = useState(false);
   const [fecha, setFecha] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -36,6 +40,12 @@ export default function CajaPage() {
   const [modalEstacionamiento, setModalEstacionamiento] = useState(false);
   const [modalMovimiento, setModalMovimiento] = useState(false);
   const [modalFinalizar, setModalFinalizar] = useState<Movimiento | null>(null);
+  const [modalEditar, setModalEditar] = useState<Movimiento | null>(null);
+  const [modalEliminar, setModalEliminar] = useState<Movimiento | null>(null);
+  const [editMonto, setEditMonto] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editFecha, setEditFecha] = useState("");
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
   const { toast, show, hide } = useToast();
 
   // Estado estacionamiento
@@ -156,6 +166,43 @@ export default function CajaPage() {
       cargarMovimientos();
     } else {
       show("Error al finalizar estacionamiento", "error");
+    }
+  };
+
+  const abrirModalEditar = (m: Movimiento) => {
+    setModalEditar(m);
+    setEditMonto(parseFloat(m.monto).toString());
+    setEditDesc(m.descripcion || "");
+    setEditFecha(format(new Date(m.fecha), "yyyy-MM-dd"));
+  };
+
+  const handleGuardarEdicion = async () => {
+    if (!modalEditar) return;
+    setGuardandoEdit(true);
+    const res = await fetch(`/api/movimientos/${modalEditar.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ monto: parseFloat(editMonto), descripcion: editDesc, fecha: editFecha }),
+    });
+    if (res.ok) {
+      show("Movimiento actualizado", "success");
+      setModalEditar(null);
+      cargarMovimientos();
+    } else {
+      show("Error al actualizar", "error");
+    }
+    setGuardandoEdit(false);
+  };
+
+  const handleEliminarMovimiento = async () => {
+    if (!modalEliminar) return;
+    const res = await fetch(`/api/movimientos/${modalEliminar.id}`, { method: "DELETE" });
+    if (res.ok) {
+      show("Movimiento eliminado", "success");
+      setModalEliminar(null);
+      cargarMovimientos();
+    } else {
+      show("Error al eliminar", "error");
     }
   };
 
@@ -306,14 +353,32 @@ export default function CajaPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {m.tipo === "estacionamiento" && !m.horaSalida && (
-                      <button
-                        onClick={() => setModalFinalizar(m)}
-                        className="text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5"
-                      >
-                        Finalizar
-                      </button>
-                    )}
+                    <div className="flex justify-center gap-1 flex-wrap">
+                      {m.tipo === "estacionamiento" && !m.horaSalida && (
+                        <button
+                          onClick={() => setModalFinalizar(m)}
+                          className="text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5"
+                        >
+                          Finalizar
+                        </button>
+                      )}
+                      {isAdmin && m.id > 0 && (
+                        <>
+                          <button
+                            onClick={() => abrirModalEditar(m)}
+                            className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg px-2 py-1.5 font-medium"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => setModalEliminar(m)}
+                            className="text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg px-2 py-1.5 font-medium"
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -475,6 +540,81 @@ export default function CajaPage() {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* Modal editar movimiento (admin) */}
+      <Modal open={!!modalEditar} onClose={() => setModalEditar(null)} title="Editar movimiento">
+        {modalEditar && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
+              <span className="font-medium">{labelTipo[modalEditar.tipo]}</span>
+              {modalEditar.patente && <span className="ml-2 font-mono font-bold">{modalEditar.patente}</span>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
+              <input
+                type="number"
+                value={editMonto}
+                onChange={(e) => setEditMonto(e.target.value)}
+                min="0"
+                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <input
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="Descripción del movimiento"
+                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+              <input
+                type="date"
+                value={editFecha}
+                onChange={(e) => setEditFecha(e.target.value)}
+                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onClick={handleGuardarEdicion}
+              disabled={guardandoEdit || !editMonto}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl py-3 font-medium"
+            >
+              {guardandoEdit ? <Spinner size="sm" /> : "Guardar cambios"}
+            </button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal eliminar movimiento (admin) */}
+      <Modal open={!!modalEliminar} onClose={() => setModalEliminar(null)} title="Eliminar movimiento">
+        {modalEliminar && (
+          <div className="space-y-4">
+            <div className="bg-red-50 rounded-xl p-4 text-sm text-red-700 space-y-1">
+              <p className="font-semibold">¿Eliminar este movimiento?</p>
+              <p>{labelTipo[modalEliminar.tipo]} — {formatMonto(parseFloat(modalEliminar.monto))}</p>
+              {modalEliminar.patente && <p>Patente: <span className="font-mono font-bold">{modalEliminar.patente}</span></p>}
+              <p className="text-xs text-red-400 mt-2">Esta acción no se puede deshacer.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setModalEliminar(null)}
+                className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl py-3 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEliminarMovimiento}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl py-3 font-medium"
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={hide} />}
