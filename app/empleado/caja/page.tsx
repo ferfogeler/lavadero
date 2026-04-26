@@ -109,11 +109,6 @@ export default function CajaPage() {
     }
   };
 
-  const abrirWhatsApp = (celular: string, mensaje: string) => {
-    const numero = celular.replace(/\D/g, "");
-    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, "_blank");
-  };
-
   const handleGuardarEstacionamiento = async () => {
     if (!estPatente) { show("La patente es obligatoria", "error"); return; }
     setGuardandoEst(true);
