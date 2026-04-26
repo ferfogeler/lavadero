@@ -14,7 +14,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json();
   const { estado, fecha, hora_inicio } = body;
 
-  const turno = await prisma.turno.findUnique({ where: { id: parseInt(params.id) } });
+  const turno = await prisma.turno.findUnique({
+    where: { id: parseInt(params.id) },
+    include: { movimiento: true },
+  });
   if (!turno) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   const updateData: Record<string, unknown> = {};
