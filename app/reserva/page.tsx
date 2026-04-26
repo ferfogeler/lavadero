@@ -31,6 +31,7 @@ export default function ReservaPage() {
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [turnoCreado, setTurnoCreado] = useState<{ token: string; fecha: string; hora: string } | null>(null);
+  const [whatsappUrl, setWhatsappUrl] = useState("");
   const [urlBase, setUrlBase] = useState("http://localhost:3000");
   const [whatsapp, setWhatsapp] = useState("3765061400");
   const { toast, show, hide } = useToast();
@@ -123,8 +124,7 @@ export default function ReservaPage() {
         `⏰ *Hora:* ${horaSeleccionada}\n\n` +
         `🔗 *Modificar o cancelar tu turno:*\n${enlace}`
       );
-      window.open(`https://wa.me/${whatsapp}?text=${texto}`, "_blank");
-
+      setWhatsappUrl(`https://wa.me/${whatsapp}?text=${texto}`);
       setTurnoCreado({ token: turno.tokenModificacion, fecha: fechaFmt, hora: horaSeleccionada! });
       setPaso(4);
     } catch {
@@ -141,7 +141,7 @@ export default function ReservaPage() {
           <div className="text-6xl mb-4">✅</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">¡Turno solicitado!</h1>
           <p className="text-gray-600 mb-6">
-            Te enviamos el mensaje a WhatsApp del lavadero para confirmar tu turno.
+            Tu turno quedó registrado. Enviá el mensaje de WhatsApp para confirmar.
           </p>
           <div className="bg-blue-50 rounded-xl p-4 text-left mb-6 space-y-2">
             <div className="flex justify-between text-sm">
@@ -157,16 +157,25 @@ export default function ReservaPage() {
               <span className="font-medium">{nombre} {apellido}</span>
             </div>
           </div>
-          <p className="text-sm text-gray-500 mb-3">Tu enlace de gestión de turno:</p>
+          {whatsappUrl && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3 font-semibold text-lg transition mb-3"
+            >
+              <span>💬</span> Confirmar por WhatsApp
+            </a>
+          )}
           <a
             href={`/turno/${turnoCreado.token}`}
-            className="text-blue-600 text-sm underline break-all"
+            className="block text-center text-blue-600 text-sm underline mb-4"
           >
-            {urlBase}/turno/{turnoCreado.token}
+            Ver / gestionar mi turno
           </a>
           <button
-            onClick={() => { setPaso(1); setTipoVehiculo(null); setFechaSeleccionada(null); setHoraSeleccionada(null); setPatente(""); setNombre(""); setApellido(""); setCelular(""); setTurnoCreado(null); }}
-            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-medium transition"
+            onClick={() => { setPaso(1); setTipoVehiculo(null); setFechaSeleccionada(null); setHoraSeleccionada(null); setPatente(""); setNombre(""); setApellido(""); setCelular(""); setTurnoCreado(null); setWhatsappUrl(""); }}
+            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl py-3 font-medium transition"
           >
             Hacer otro turno
           </button>
