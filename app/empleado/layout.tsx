@@ -19,7 +19,7 @@ function Nav() {
     <nav className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         <div className="flex items-center gap-1">
-          <span className="font-bold mr-4">🚿 Lavadero</span>
+          <span className="font-bold mr-4">🚿 Recepción</span>
           {links.map((l) => (
             <Link
               key={l.href}

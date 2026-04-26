@@ -18,7 +18,7 @@ export default function Home() {
             href="/empleado"
             className="bg-blue-500 hover:bg-blue-400 text-white rounded-2xl py-4 font-semibold text-lg transition shadow-lg"
           >
-            👷 Panel empleado
+            👷 Panel recepción
           </Link>
           <Link
             href="/admin"
