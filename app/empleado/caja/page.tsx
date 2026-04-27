@@ -370,6 +370,7 @@ export default function CajaPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b">
+                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">#</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">Fecha/Hora</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Tipo</th>
                 <th className="px-4 py-3 text-left font-semibold text-gray-600">Patente</th>
@@ -381,13 +382,16 @@ export default function CajaPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={7} className="text-center py-10"><Spinner /></td></tr>
+                <tr><td colSpan={8} className="text-center py-10"><Spinner /></td></tr>
               )}
               {!loading && movimientos.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-10 text-gray-400">Sin movimientos en esta fecha</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 text-gray-400">Sin movimientos en esta fecha</td></tr>
               )}
               {movimientos.map((m, i) => (
                 <tr key={m.id} className={`border-b ${i % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50 transition-colors`}>
+                  <td className="px-4 py-3 text-gray-400 text-xs font-mono whitespace-nowrap">
+                    {m.id > 0 ? `#${m.id}` : `T${Math.abs(m.id)}`}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-500">
                     {format(new Date(m.fecha), "HH:mm")}
                   </td>
@@ -454,17 +458,17 @@ export default function CajaPage() {
             {/* Pie con totales */}
             <tfoot>
               <tr className="bg-gray-100 border-t-2 font-semibold">
-                <td colSpan={5} className="px-4 py-3 text-right text-gray-600">Ingresos del día:</td>
+                <td colSpan={6} className="px-4 py-3 text-right text-gray-600">Ingresos del día:</td>
                 <td className="px-4 py-3 text-right text-green-700">{formatMonto(totalIngresos)}</td>
                 <td />
               </tr>
               <tr className="bg-gray-100 font-semibold">
-                <td colSpan={5} className="px-4 py-3 text-right text-gray-600">Egresos del día:</td>
+                <td colSpan={6} className="px-4 py-3 text-right text-gray-600">Egresos del día:</td>
                 <td className="px-4 py-3 text-right text-red-700">{formatMonto(totalEgresos)}</td>
                 <td />
               </tr>
               <tr className="bg-gray-200 font-bold">
-                <td colSpan={5} className="px-4 py-3 text-right text-gray-800">Resultado del día:</td>
+                <td colSpan={6} className="px-4 py-3 text-right text-gray-800">Resultado del día:</td>
                 <td className={`px-4 py-3 text-right ${totalIngresos - totalEgresos >= 0 ? "text-green-800" : "text-red-800"}`}>
                   {formatMonto(totalIngresos - totalEgresos)}
                 </td>
