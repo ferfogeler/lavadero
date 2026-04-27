@@ -41,11 +41,6 @@ const colorTipo: Record<string, string> = {
 
 const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-// Parse a yyyy-MM-dd string as local date (avoids UTC offset shifting)
-function parseLocalDate(str: string): Date {
-  const [y, m, d] = str.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
 
 export default function ArqueoPage() {
   const [modo, setModo] = useState<"dia" | "mes" | "anio">("dia");
