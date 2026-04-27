@@ -23,7 +23,7 @@ interface Turno {
 
 type Vista = "semana" | "dia";
 
-const ESTADOS = ["pendiente", "confirmado", "completado", "cancelado"] as const;
+const ESTADOS = ["completado", "cancelado"] as const;
 
 export default function EmpleadoTurnosPage() {
   const [vista, setVista] = useState<Vista>("dia");
@@ -315,23 +315,38 @@ export default function EmpleadoTurnosPage() {
                 </div>
               )}
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Cambiar estado:</p>
-              <div className="flex flex-wrap gap-2">
-                {ESTADOS.map((e) => (
-                  <button
-                    key={e}
-                    onClick={() => handleCambiarEstado(turnoSeleccionado.id, e)}
-                    disabled={turnoSeleccionado.estado === e}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                      turnoSeleccionado.estado === e ? "bg-gray-200" : "hover:bg-gray-50"
-                    }`}
-                  >
-                    {e}
-                  </button>
-                ))}
+            {!["completado", "cancelado"].includes(turnoSeleccionado.estado) && (
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleCambiarEstado(turnoSeleccionado.id, "completado")}
+                  className="bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-sm font-medium"
+                >
+                  ✅ Completar
+                </button>
+                <button
+                  onClick={() => handleCambiarEstado(turnoSeleccionado.id, "cancelado")}
+                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-medium"
+                >
+                  ❌ Cancelar
+                </button>
               </div>
-            </div>
+            )}
+            {turnoSeleccionado.estado === "completado" && (
+              <button
+                onClick={() => handleCambiarEstado(turnoSeleccionado.id, "cancelado")}
+                className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-medium"
+              >
+                ❌ Cancelar turno
+              </button>
+            )}
+            {turnoSeleccionado.estado === "cancelado" && (
+              <button
+                onClick={() => handleCambiarEstado(turnoSeleccionado.id, "confirmado")}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 text-sm font-medium"
+              >
+                🔄 Reactivar turno
+              </button>
+            )}
           </div>
         )}
       </Modal>

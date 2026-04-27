@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       hora_inicio: inicio,
       hora_fin: fin,
       creadoPor,
+      estado: "confirmado", // todos los turnos se crean directamente como confirmados
     },
     include: { cliente: true },
   });
