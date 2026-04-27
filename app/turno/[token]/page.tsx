@@ -97,7 +97,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
         `⏰ *Nuevo horario:* ${nuevaHora}\n\n` +
         `🔗 Gestionar turno:\n${enlace}`
       );
-      setWhatsappPendiente({ url: `https://wa.me/${whatsapp}?text=${texto}`, titulo: "Avisar cambio de turno al lavadero" });
+      setWhatsappPendiente({ url: `https://wa.me/${whatsapp}?text=${texto}`, titulo: "Avisar cambio de turno a GarageUno" });
     } else {
       const e = await res.json();
       show(e.error || "Error al modificar el turno", "error");
@@ -127,7 +127,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
         `⏰ *Horario:* ${hora}\n\n` +
         `🔗 Reservar un nuevo turno:\nhttps://${window.location.host}/reserva`
       );
-      setWhatsappPendiente({ url: `https://wa.me/${whatsapp}?text=${texto}`, titulo: "Avisar cancelación al lavadero" });
+      setWhatsappPendiente({ url: `https://wa.me/${whatsapp}?text=${texto}`, titulo: "Avisar cancelación a GarageUno" });
     } else {
       const e = await res.json();
       show(e.error || "Error al cancelar el turno", "error");
@@ -321,7 +321,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 text-center">
             <div className="text-3xl">💬</div>
             <p className="font-semibold text-gray-800">Enviá el aviso por WhatsApp</p>
-            <p className="text-sm text-gray-500">Tocá el botón para notificar al lavadero.</p>
+            <p className="text-sm text-gray-500">Tocá el botón para notificar a GarageUno.</p>
             <a
               href={whatsappPendiente.url}
               target="_blank"

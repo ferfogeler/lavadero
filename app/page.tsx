@@ -4,8 +4,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center p-4">
       <div className="text-center text-white max-w-md">
-        <div className="text-8xl mb-6">🚿</div>
-        <h1 className="text-4xl font-bold mb-3">Lavadero Express</h1>
+        <div className="text-8xl mb-6">🏎️</div>
+        <h1 className="text-4xl font-bold mb-3">GarageUno</h1>
         <p className="text-blue-200 mb-10 text-lg">Sistema de gestión de lavado y estacionamiento</p>
         <div className="flex flex-col gap-3">
           <Link

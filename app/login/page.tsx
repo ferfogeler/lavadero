@@ -36,7 +36,7 @@ function LoginForm() {
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="recepcion / admin"
+          placeholder="usuario"
           autoComplete="username"
           required
           className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -70,8 +70,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🚿</div>
-          <h1 className="text-2xl font-bold text-gray-900">Lavadero</h1>
+          <div className="text-5xl mb-3">🏎️</div>
+          <h1 className="text-2xl font-bold text-gray-900">GarageUno</h1>
           <p className="text-gray-500 text-sm mt-1">Panel de gestión</p>
         </div>
         <Suspense fallback={<Spinner />}>

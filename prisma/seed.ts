@@ -49,7 +49,7 @@ async function main() {
   // ConfiguracionGeneral
   const configs = [
     { clave: "whatsapp_lavadero", valor: "3765061400" },
-    { clave: "nombre_negocio", valor: "Lavadero Express" },
+    { clave: "nombre_negocio", valor: "GarageUno" },
     { clave: "horario_apertura", valor: "08:00" },
     { clave: "horario_cierre", valor: "20:00" },
     { clave: "horario_apertura_lavado", valor: "08:00" },

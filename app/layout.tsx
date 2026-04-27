@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lavadero Express",
-  description: "Sistema de gestión de lavadero y estacionamiento",
+  title: "GarageUno",
+  description: "Sistema de gestión de GarageUno",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

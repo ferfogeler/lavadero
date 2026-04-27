@@ -7,7 +7,7 @@ const SECCIONES = [
   {
     titulo: "🏪 Datos del negocio",
     campos: [
-      { clave: "nombre_negocio", label: "Nombre del negocio", placeholder: "Lavadero Express", type: "text" },
+      { clave: "nombre_negocio", label: "Nombre del negocio", placeholder: "GarageUno", type: "text" },
       { clave: "whatsapp_lavadero", label: "WhatsApp del lavadero", placeholder: "3765061400", type: "text" },
       { clave: "url_base", label: "URL base del sistema", placeholder: "https://milavadero.easypanel.host", type: "url" },
     ],
