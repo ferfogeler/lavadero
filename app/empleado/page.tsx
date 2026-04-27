@@ -46,6 +46,7 @@ export default function EmpleadoTurnosPage() {
   const [nuevoCelular, setNuevoCelular] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [nuevoStep, setNuevoStep] = useState<1 | 2 | 3>(1);
+  const [nuevoClienteEncontrado, setNuevoClienteEncontrado] = useState<boolean | null>(null);
   const [configsLavado, setConfigsLavado] = useState<Record<string, { precio: number; duracion_minutos: number }>>({});
   const [urlBase, setUrlBase] = useState("http://localhost:3000");
   const [whatsappLavadero, setWhatsappLavadero] = useState("3765061400");
@@ -103,6 +104,10 @@ export default function EmpleadoTurnosPage() {
       setNuevoNombre(c.nombre);
       setNuevoApellido(c.apellido);
       setNuevoCelular(c.celular);
+      setNuevoClienteEncontrado(true);
+    } else {
+      setNuevoNombre(""); setNuevoApellido(""); setNuevoCelular("");
+      setNuevoClienteEncontrado(false);
     }
   };
 
@@ -152,7 +157,7 @@ export default function EmpleadoTurnosPage() {
       }
 
       setNuevoPatente(""); setNuevoNombre(""); setNuevoApellido(""); setNuevoCelular("");
-      setNuevoFecha(null); setNuevoHora(null);
+      setNuevoFecha(null); setNuevoHora(null); setNuevoClienteEncontrado(null);
       cargarTurnos();
     } else {
       show("Error al crear turno", "error");
@@ -327,7 +332,7 @@ export default function EmpleadoTurnosPage() {
       </Modal>
 
       {/* Modal nuevo turno */}
-      <Modal open={modalNuevo} onClose={() => { setModalNuevo(false); setNuevoStep(1); }} title="Nuevo turno" maxWidth="max-w-2xl">
+      <Modal open={modalNuevo} onClose={() => { setModalNuevo(false); setNuevoStep(1); setNuevoClienteEncontrado(null); }} title="Nuevo turno" maxWidth="max-w-2xl">
         <div>
           {nuevoStep === 1 && (
             <div>
@@ -387,35 +392,59 @@ export default function EmpleadoTurnosPage() {
           )}
           {nuevoStep === 3 && (
             <div>
-              <button onClick={() => setNuevoStep(2)} className="text-blue-600 text-sm mb-3">← Volver</button>
+              <button onClick={() => { setNuevoStep(2); setNuevoClienteEncontrado(null); }} className="text-blue-600 text-sm mb-3">← Volver</button>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Patente (opcional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Patente *</label>
                   <input
                     value={nuevoPatente}
-                    onChange={(e) => { const v = e.target.value.toUpperCase(); setNuevoPatente(v); if (v.length >= 6) buscarClienteNuevo(v); }}
+                    onChange={(e) => {
+                      const v = e.target.value.toUpperCase();
+                      setNuevoPatente(v);
+                      setNuevoClienteEncontrado(null);
+                      if (v.length >= 6) buscarClienteNuevo(v);
+                    }}
                     placeholder="ABC123"
                     className="w-full border rounded-xl px-4 py-2.5 font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                    <input value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} className="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+                {/* Cliente encontrado */}
+                {nuevoClienteEncontrado === true && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm space-y-0.5">
+                    <p className="font-semibold text-green-800">✅ Cliente encontrado</p>
+                    <p className="text-gray-700">{nuevoNombre} {nuevoApellido}</p>
+                    {nuevoCelular && <p className="text-gray-500">📱 {nuevoCelular}</p>}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                    <input value={nuevoApellido} onChange={(e) => setNuevoApellido(e.target.value)} className="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                )}
+
+                {/* Cliente no encontrado — alta inline */}
+                {nuevoClienteEncontrado === false && (
+                  <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
+                    <p className="text-sm font-medium text-amber-700">Patente no registrada — ingresá los datos del cliente</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
+                        <input value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} placeholder="Juan"
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Apellido *</label>
+                        <input value={nuevoApellido} onChange={(e) => setNuevoApellido(e.target.value)} placeholder="Pérez"
+                          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Celular</label>
+                      <input value={nuevoCelular} onChange={(e) => setNuevoCelular(e.target.value)} placeholder="3765000000" type="tel"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Celular</label>
-                  <input value={nuevoCelular} onChange={(e) => setNuevoCelular(e.target.value)} type="tel" className="w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
+                )}
               </div>
               <button
                 onClick={handleGuardarNuevo}
-                disabled={guardando}
+                disabled={guardando || !nuevoPatente}
                 className="mt-4 w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl py-3 font-semibold"
               >
                 {guardando ? <Spinner size="sm" /> : "✅ Guardar turno"}

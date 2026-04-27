@@ -19,6 +19,7 @@ interface Movimiento {
   turnoId: number | null;
   cliente?: { nombre: string; apellido: string; celular: string; tipo_vehiculo: string } | null;
   concepto?: { nombre: string; tipoConcepto: string } | null;
+  turno?: { id: number; estado: string; tipo_vehiculo: string; hora_inicio: string } | null;
 }
 
 interface Concepto {
@@ -42,6 +43,8 @@ export default function CajaPage() {
   const [modalFinalizar, setModalFinalizar] = useState<Movimiento | null>(null);
   const [modalEditar, setModalEditar] = useState<Movimiento | null>(null);
   const [modalEliminar, setModalEliminar] = useState<Movimiento | null>(null);
+  const [modalGestionarLavado, setModalGestionarLavado] = useState<Movimiento | null>(null);
+  const [guardandoTurno, setGuardandoTurno] = useState(false);
   const [whatsappPendiente, setWhatsappPendiente] = useState<{ url: string; titulo: string } | null>(null);
   const [editMonto, setEditMonto] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -244,6 +247,23 @@ export default function CajaPage() {
     }
   };
 
+  const handleCambiarEstadoTurno = async (turnoId: number, estado: string) => {
+    setGuardandoTurno(true);
+    const res = await fetch(`/api/turnos/${turnoId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado }),
+    });
+    if (res.ok) {
+      show(`Turno marcado como ${estado}`, "success");
+      setModalGestionarLavado(null);
+      cargarMovimientos();
+    } else {
+      show("Error al cambiar estado", "error");
+    }
+    setGuardandoTurno(false);
+  };
+
   const handleGuardarMovimiento = async () => {
     setGuardandoMov(true);
     const concepto = conceptos.find((c) => c.id === parseInt(movConceptoId));
@@ -392,6 +412,14 @@ export default function CajaPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center gap-1 flex-wrap">
+                      {m.tipo === "lavado" && m.turnoId && (
+                        <button
+                          onClick={() => setModalGestionarLavado(m)}
+                          className="text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-1.5"
+                        >
+                          Gestionar
+                        </button>
+                      )}
                       {m.tipo === "estacionamiento" && !m.horaSalida && (
                         <button
                           onClick={() => setModalFinalizar(m)}
@@ -726,6 +754,79 @@ export default function CajaPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal gestionar lavado */}
+      <Modal open={!!modalGestionarLavado} onClose={() => setModalGestionarLavado(null)} title="Gestionar lavado">
+        {modalGestionarLavado && (() => {
+          const estado = modalGestionarLavado.turno?.estado ?? (modalGestionarLavado.id < 0 ? "confirmado" : "completado");
+          const estadoColor: Record<string, string> = {
+            pendiente: "text-yellow-700 bg-yellow-50",
+            confirmado: "text-green-700 bg-green-50",
+            completado: "text-gray-700 bg-gray-100",
+            cancelado: "text-red-700 bg-red-50",
+          };
+          const turnoRealId = modalGestionarLavado.turnoId!;
+          return (
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+                {modalGestionarLavado.patente && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Patente</span>
+                    <span className="font-mono font-bold">{modalGestionarLavado.patente}</span>
+                  </div>
+                )}
+                {modalGestionarLavado.cliente && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Cliente</span>
+                    <span>{modalGestionarLavado.cliente.nombre} {modalGestionarLavado.cliente.apellido}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Vehículo</span>
+                  <span>{labelTipoVehiculo(modalGestionarLavado.turno?.tipo_vehiculo || "auto")}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Monto</span>
+                  <span className="font-semibold">{formatMonto(parseFloat(modalGestionarLavado.monto))}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Estado</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${estadoColor[estado] || ""}`}>{estado}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {estado !== "completado" && (
+                  <button
+                    onClick={() => handleCambiarEstadoTurno(turnoRealId, "completado")}
+                    disabled={guardandoTurno}
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium"
+                  >
+                    ✅ Marcar como completado
+                  </button>
+                )}
+                {estado !== "confirmado" && estado !== "cancelado" && (
+                  <button
+                    onClick={() => handleCambiarEstadoTurno(turnoRealId, "confirmado")}
+                    disabled={guardandoTurno}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium"
+                  >
+                    🔄 Volver a confirmado
+                  </button>
+                )}
+                {estado !== "cancelado" && (
+                  <button
+                    onClick={() => handleCambiarEstadoTurno(turnoRealId, "cancelado")}
+                    disabled={guardandoTurno}
+                    className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium"
+                  >
+                    ❌ Cancelar turno
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* Modal WhatsApp (compatible iOS) */}
