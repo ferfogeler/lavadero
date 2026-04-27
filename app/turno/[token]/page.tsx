@@ -33,6 +33,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [whatsapp, setWhatsapp] = useState("3765061400");
+  const [whatsappPendiente, setWhatsappPendiente] = useState<{ url: string; titulo: string } | null>(null);
   const { toast, show, hide } = useToast();
 
   useEffect(() => {
@@ -96,7 +97,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
         `⏰ *Nuevo horario:* ${nuevaHora}\n\n` +
         `🔗 Gestionar turno:\n${enlace}`
       );
-      window.open(`https://wa.me/${whatsapp}?text=${texto}`, "_blank");
+      setWhatsappPendiente({ url: `https://wa.me/${whatsapp}?text=${texto}`, titulo: "Avisar cambio de turno al lavadero" });
     } else {
       const e = await res.json();
       show(e.error || "Error al modificar el turno", "error");
@@ -126,7 +127,7 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
         `⏰ *Horario:* ${hora}\n\n` +
         `🔗 Reservar un nuevo turno:\nhttps://${window.location.host}/reserva`
       );
-      window.open(`https://wa.me/${whatsapp}?text=${texto}`, "_blank");
+      setWhatsappPendiente({ url: `https://wa.me/${whatsapp}?text=${texto}`, titulo: "Avisar cancelación al lavadero" });
     } else {
       const e = await res.json();
       show(e.error || "Error al cancelar el turno", "error");
@@ -313,6 +314,33 @@ export default function TurnoPage({ params }: { params: { token: string } }) {
           <a href="/reserva" className="underline hover:text-gray-600">Hacer un nuevo turno</a>
         </p>
       </div>
+
+      {/* Modal WhatsApp (compatible iOS) */}
+      {whatsappPendiente && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4 text-center">
+            <div className="text-3xl">💬</div>
+            <p className="font-semibold text-gray-800">Enviá el aviso por WhatsApp</p>
+            <p className="text-sm text-gray-500">Tocá el botón para notificar al lavadero.</p>
+            <a
+              href={whatsappPendiente.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWhatsappPendiente(null)}
+              className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3 font-semibold text-lg transition"
+            >
+              💬 {whatsappPendiente.titulo}
+            </a>
+            <button
+              onClick={() => setWhatsappPendiente(null)}
+              className="w-full text-sm text-gray-400 hover:text-gray-600"
+            >
+              Omitir
+            </button>
+          </div>
+        </div>
+      )}
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={hide} />}
     </div>
   );
