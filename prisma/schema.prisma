@@ -8,14 +8,17 @@ datasource db {
 }
 
 model Cliente {
-  patente       String        @id
-  nombre        String
-  apellido      String
-  celular       String
-  tipo_vehiculo TipoVehiculo
-  createdAt     DateTime      @default(now())
-  turnos        Turno[]
-  movimientos   MovimientoCaja[]
+  patente           String                   @id
+  nombre            String
+  apellido          String
+  celular           String
+  tipo_vehiculo     TipoVehiculo
+  clienteMensual    Boolean                  @default(false)
+  tipoMensual       String?
+  createdAt         DateTime                 @default(now())
+  turnos            Turno[]
+  movimientos       MovimientoCaja[]
+  estadiasMensuales EstacionamientoMensual[]
 }
 
 model Turno {
@@ -79,6 +82,21 @@ model ConfiguracionServicio {
 model ConfiguracionGeneral {
   clave String @id
   valor String
+}
+
+model EstacionamientoMensual {
+  id          Int       @id @default(autoincrement())
+  patente     String
+  cliente     Cliente?  @relation(fields: [patente], references: [patente])
+  tipo        String    // mensual_completa | mensual_media
+  mes         Int
+  anio        Int
+  fechaAlta   DateTime  @default(now())
+  estado      String    @default("pendiente") // pendiente | pagado
+  montoPagado Decimal?  @db.Decimal(10, 2)
+  fechaPago   DateTime?
+
+  @@unique([patente, mes, anio])
 }
 
 enum TipoVehiculo {

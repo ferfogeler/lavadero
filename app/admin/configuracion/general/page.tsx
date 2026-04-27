@@ -27,11 +27,19 @@ const SECCIONES = [
     ],
   },
   {
-    titulo: "💰 Tarifas de estacionamiento",
+    titulo: "💰 Tarifas de estacionamiento diario",
     campos: [
-      { clave: "tarifa_estacionamiento_por_minuto", label: "Fracción por minuto ($)", placeholder: "50", type: "number" },
-      { clave: "precio_estadia_completa", label: "Estadía completa ($)", placeholder: "2000", type: "number" },
-      { clave: "precio_media_estadia", label: "Media estadía ($)", placeholder: "1000", type: "number" },
+      { clave: "precio_hora", label: "Por hora ($)", placeholder: "500", type: "number" },
+      { clave: "precio_diaria", label: "Estadía diaria ($)", placeholder: "2000", type: "number" },
+      { clave: "precio_media_diaria", label: "Media estadía diaria ($)", placeholder: "1000", type: "number" },
+    ],
+  },
+  {
+    titulo: "📅 Tarifas de estacionamiento mensual",
+    campos: [
+      { clave: "precio_mensual_completa", label: "Mensual estadía completa ($)", placeholder: "25000", type: "number" },
+      { clave: "precio_mensual_media", label: "Mensual media estadía ($)", placeholder: "15000", type: "number" },
+      { clave: "interes_mensual_diario_pct", label: "Interés diario después del día 10 (%)", placeholder: "1.5", type: "number" },
     ],
   },
 ];

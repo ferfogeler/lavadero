@@ -13,13 +13,20 @@ export async function GET(_: NextRequest, { params }: { params: { patente: strin
 
 export async function PUT(req: NextRequest, { params }: { params: { patente: string } }) {
   const body = await req.json();
-  const { nombre, apellido, celular, tipo_vehiculo } = body;
+  const { nombre, apellido, celular, tipo_vehiculo, clienteMensual, tipoMensual } = body;
   if (!nombre || !apellido || !celular || !tipo_vehiculo) {
     return NextResponse.json({ error: "Campos requeridos faltantes" }, { status: 400 });
   }
   const cliente = await prisma.cliente.update({
     where: { patente: params.patente.toUpperCase() },
-    data: { nombre, apellido, celular, tipo_vehiculo },
+    data: {
+      nombre,
+      apellido,
+      celular,
+      tipo_vehiculo,
+      clienteMensual: clienteMensual ?? false,
+      tipoMensual: clienteMensual ? (tipoMensual ?? null) : null,
+    },
   });
   return NextResponse.json(cliente);
 }

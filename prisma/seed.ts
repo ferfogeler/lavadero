@@ -59,6 +59,12 @@ async function main() {
     { clave: "tarifa_estacionamiento_por_minuto", valor: "50" },
     { clave: "precio_estadia_completa", valor: "2000" },
     { clave: "precio_media_estadia", valor: "1000" },
+    { clave: "precio_hora", valor: "500" },
+    { clave: "precio_diaria", valor: "2000" },
+    { clave: "precio_media_diaria", valor: "1000" },
+    { clave: "precio_mensual_completa", valor: "25000" },
+    { clave: "precio_mensual_media", valor: "15000" },
+    { clave: "interes_mensual_diario_pct", valor: "1.5" },
     { clave: "url_base", valor: "http://localhost:3000" },
   ];
   for (const c of configs) {

@@ -20,6 +20,21 @@ export function formatMonto(monto: number | string): string {
   }).format(n);
 }
 
+export function labelTipoEstacionamiento(tipo: string): string {
+  const labels: Record<string, string> = {
+    hora:             "Por hora",
+    diaria:           "Estadía diaria",
+    media_diaria:     "Media estadía diaria",
+    mensual_completa: "Mensual estadía completa",
+    mensual_media:    "Mensual media estadía",
+    // legacy
+    fraccion:         "Por minuto",
+    completa:         "Estadía completa",
+    media:            "Media estadía",
+  };
+  return labels[tipo] ?? tipo;
+}
+
 export function labelServicio(servicio: string): string {
   const labels: Record<string, string> = {
     completo: "Lavado completo",

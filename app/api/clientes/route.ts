@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { patente, nombre, apellido, celular, tipo_vehiculo } = body;
+  const { patente, nombre, apellido, celular, tipo_vehiculo, clienteMensual, tipoMensual } = body;
 
   if (!patente || !nombre || !apellido || !celular || !tipo_vehiculo) {
     return NextResponse.json({ error: "Campos requeridos faltantes" }, { status: 400 });
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
 
   const cliente = await prisma.cliente.upsert({
     where: { patente: patente.toUpperCase() },
-    update: { nombre, apellido, celular, tipo_vehiculo },
-    create: { patente: patente.toUpperCase(), nombre, apellido, celular, tipo_vehiculo },
+    update: { nombre, apellido, celular, tipo_vehiculo, clienteMensual: clienteMensual ?? false, tipoMensual: tipoMensual ?? null },
+    create: { patente: patente.toUpperCase(), nombre, apellido, celular, tipo_vehiculo, clienteMensual: clienteMensual ?? false, tipoMensual: tipoMensual ?? null },
   });
 
   return NextResponse.json(cliente);
