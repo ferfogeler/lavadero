@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { Modal } from "@/components/Modal";
 import { Toast, useToast } from "@/components/Toast";
 import { Spinner } from "@/components/Spinner";
@@ -30,7 +31,8 @@ interface Concepto {
 
 export default function CajaPage() {
   const { data: session } = useSession();
-  const isAdmin = (session?.user as { role?: string })?.role === "admin";
+  const pathname = usePathname();
+  const isAdmin = (session?.user as { role?: string })?.role === "admin" && pathname.startsWith("/admin");
 
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [loading, setLoading] = useState(false);
