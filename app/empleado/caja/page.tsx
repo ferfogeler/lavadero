@@ -651,7 +651,7 @@ export default function CajaPage() {
                     <tr>
                       <td colSpan={9} className="text-center py-10 text-gray-400">
                         No hay estadías para {MESES_LABEL[mesMensual - 1]} {anioMensual}.<br />
-                        <span className="text-xs">Usá "Generar mes" para crearlas automáticamente.</span>
+                        <span className="text-xs">Usá &quot;Generar mes&quot; para crearlas automáticamente.</span>
                       </td>
                     </tr>
                   )}
