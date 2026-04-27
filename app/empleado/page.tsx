@@ -49,7 +49,6 @@ export default function EmpleadoTurnosPage() {
   const [nuevoClienteEncontrado, setNuevoClienteEncontrado] = useState<boolean | null>(null);
   const [configsLavado, setConfigsLavado] = useState<Record<string, { precio: number; duracion_minutos: number }>>({});
   const [urlBase, setUrlBase] = useState("http://localhost:3000");
-  const [whatsappLavadero, setWhatsappLavadero] = useState("3765061400");
   const [whatsappPendiente, setWhatsappPendiente] = useState<{ url: string; titulo: string } | null>(null);
 
   const cargarTurnos = useCallback(async () => {
@@ -79,7 +78,6 @@ export default function EmpleadoTurnosPage() {
       for (const c of lavado) cfg[c.tipo_vehiculo] = c;
       setConfigsLavado(cfg);
       setUrlBase(general.url_base || "http://localhost:3000");
-      setWhatsappLavadero(general.whatsapp_lavadero || "3765061400");
     });
   }, []);
 
