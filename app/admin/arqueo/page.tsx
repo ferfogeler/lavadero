@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { es } from "date-fns/locale";
 import { Spinner } from "@/components/Spinner";
 import { formatMonto } from "@/lib/utils";
 
@@ -38,33 +39,72 @@ const colorTipo: Record<string, string> = {
   gasto: "text-orange-600",
 };
 
+const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+// Parse a yyyy-MM-dd string as local date (avoids UTC offset shifting)
+function parseLocalDate(str: string): Date {
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export default function ArqueoPage() {
-  const [modo, setModo] = useState<"dia" | "mes">("dia");
+  const [modo, setModo] = useState<"dia" | "mes" | "anio">("dia");
   const [fecha, setFecha] = useState(format(new Date(), "yyyy-MM-dd"));
   const [mes, setMes] = useState(format(new Date(), "yyyy-MM"));
+  const [anio, setAnio] = useState(new Date().getFullYear());
   const [data, setData] = useState<Arqueo | null>(null);
   const [loading, setLoading] = useState(false);
 
   const buscar = async () => {
     setLoading(true);
     let desde: string, hasta: string;
+
     if (modo === "dia") {
       desde = hasta = fecha;
-    } else {
-      const d = new Date(mes + "-01");
+    } else if (modo === "mes") {
+      // Fix: parse as local date to avoid UTC-offset shifting the month
+      const [y, m] = mes.split("-").map(Number);
+      const d = new Date(y, m - 1, 1);
       desde = format(startOfMonth(d), "yyyy-MM-dd");
       hasta = format(endOfMonth(d), "yyyy-MM-dd");
+    } else {
+      const d = new Date(anio, 0, 1);
+      desde = format(startOfYear(d), "yyyy-MM-dd");
+      hasta = format(endOfYear(d), "yyyy-MM-dd");
     }
+
     const res = await fetch(`/api/reportes/arqueo?desde=${desde}&hasta=${hasta}`);
     const json = await res.json();
     setData(json);
     setLoading(false);
   };
 
-  const diasGrafico = data ? Object.entries(data.porDia).sort(([a], [b]) => a.localeCompare(b)) : [];
-  const maxGrafico = diasGrafico.length > 0
-    ? Math.max(...diasGrafico.flatMap(([, v]) => [v.ingresos, v.egresos]))
+  // For año mode: aggregate porDia into porMes
+  const porMes: Record<string, { ingresos: number; egresos: number }> = {};
+  if (data && modo === "anio") {
+    for (const [dia, vals] of Object.entries(data.porDia)) {
+      const mesKey = dia.slice(0, 7); // "2026-04"
+      if (!porMes[mesKey]) porMes[mesKey] = { ingresos: 0, egresos: 0 };
+      porMes[mesKey].ingresos += vals.ingresos;
+      porMes[mesKey].egresos += vals.egresos;
+    }
+  }
+
+  const graficoEntradas = modo === "anio"
+    ? Object.entries(porMes).sort(([a], [b]) => a.localeCompare(b))
+    : data ? Object.entries(data.porDia).sort(([a], [b]) => a.localeCompare(b)) : [];
+
+  const maxGrafico = graficoEntradas.length > 0
+    ? Math.max(...graficoEntradas.flatMap(([, v]) => [v.ingresos, v.egresos]), 1)
     : 1;
+
+  const labelGrafico = (key: string) => {
+    if (modo === "anio") {
+      const [, m] = key.split("-").map(Number);
+      return MESES_CORTO[m - 1];
+    }
+    return key.slice(8); // day number
+  };
 
   return (
     <div>
@@ -73,42 +113,51 @@ export default function ArqueoPage() {
       {/* Selectores */}
       <div className="bg-white rounded-xl shadow border p-4 mb-6 flex flex-wrap items-end gap-4">
         <div className="flex rounded-lg border overflow-hidden">
-          {(["dia", "mes"] as const).map((m) => (
+          {(["dia", "mes", "anio"] as const).map((m) => (
             <button
               key={m}
-              onClick={() => setModo(m)}
+              onClick={() => { setModo(m); setData(null); }}
               className={`px-4 py-2 text-sm ${modo === m ? "bg-blue-600 text-white" : "hover:bg-gray-50"}`}
             >
-              {m === "dia" ? "Por día" : "Por mes"}
+              {m === "dia" ? "Por día" : m === "mes" ? "Por mes" : "Por año"}
             </button>
           ))}
         </div>
-        {modo === "dia" ? (
-          <input
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        ) : (
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+
+        {modo === "dia" && (
+          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
+            className="border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         )}
-        <button
-          onClick={buscar}
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl px-6 py-2.5 font-medium"
-        >
+        {modo === "mes" && (
+          <input type="month" value={mes} onChange={(e) => setMes(e.target.value)}
+            className="border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        )}
+        {modo === "anio" && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => setAnio(a => a - 1)} className="px-3 py-2 border rounded-xl hover:bg-gray-50 text-gray-600">‹</button>
+            <span className="font-semibold text-gray-800 w-16 text-center">{anio}</span>
+            <button onClick={() => setAnio(a => a + 1)} className="px-3 py-2 border rounded-xl hover:bg-gray-50 text-gray-600">›</button>
+          </div>
+        )}
+
+        <button onClick={buscar} disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl px-6 py-2.5 font-medium">
           {loading ? <Spinner size="sm" /> : "Ver arqueo"}
         </button>
+        {data && (
+          <button onClick={() => window.print()} className="text-blue-600 hover:underline text-sm print:hidden">
+            🖨️ Imprimir
+          </button>
+        )}
       </div>
 
       {data && (
         <>
+          {/* Título período */}
+          {modo === "anio" && (
+            <p className="text-center text-lg font-semibold text-gray-700 mb-4">Año {anio}</p>
+          )}
+
           {/* Resumen */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
@@ -128,38 +177,38 @@ export default function ArqueoPage() {
           </div>
 
           {/* Desglose por tipo */}
-          <div className="bg-white rounded-xl shadow border p-4 mb-6">
-            <h3 className="font-semibold text-gray-800 mb-3">Desglose por tipo</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {Object.entries(data.resumen.porTipo).map(([tipo, monto]) => (
-                <div key={tipo} className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className={`text-xs font-medium ${colorTipo[tipo]}`}>{labelTipo[tipo]}</p>
-                  <p className="font-bold text-gray-800 mt-1 text-sm">{formatMonto(monto)}</p>
-                </div>
-              ))}
+          {Object.keys(data.resumen.porTipo).length > 0 && (
+            <div className="bg-white rounded-xl shadow border p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">Desglose por tipo</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {Object.entries(data.resumen.porTipo).map(([tipo, monto]) => (
+                  <div key={tipo} className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className={`text-xs font-medium ${colorTipo[tipo] ?? "text-gray-600"}`}>{labelTipo[tipo] ?? tipo}</p>
+                    <p className="font-bold text-gray-800 mt-1 text-sm">{formatMonto(monto)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Gráfico de barras (CSS) */}
-          {diasGrafico.length > 1 && (
-            <div className="bg-white rounded-xl shadow border p-4 mb-6 print:break-before-page">
-              <h3 className="font-semibold text-gray-800 mb-4">Ingresos vs Egresos por día</h3>
+          {/* Gráfico de barras */}
+          {graficoEntradas.length > 0 && (
+            <div className="bg-white rounded-xl shadow border p-4 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-4">
+                {modo === "anio" ? "Ingresos vs Egresos por mes" : "Ingresos vs Egresos por día"}
+              </h3>
               <div className="flex items-end gap-2 h-40 overflow-x-auto pb-2">
-                {diasGrafico.map(([dia, vals]) => (
-                  <div key={dia} className="flex flex-col items-center gap-1 min-w-[40px]">
+                {graficoEntradas.map(([key, vals]) => (
+                  <div key={key} className="flex flex-col items-center gap-1 min-w-[40px]">
                     <div className="flex items-end gap-0.5 h-32">
-                      <div
-                        className="w-4 bg-green-500 rounded-t"
-                        style={{ height: `${(vals.ingresos / maxGrafico) * 100}%`, minHeight: 2 }}
-                        title={`Ingresos: ${formatMonto(vals.ingresos)}`}
-                      />
-                      <div
-                        className="w-4 bg-red-400 rounded-t"
-                        style={{ height: `${(vals.egresos / maxGrafico) * 100}%`, minHeight: 2 }}
-                        title={`Egresos: ${formatMonto(vals.egresos)}`}
-                      />
+                      <div className="w-4 bg-green-500 rounded-t"
+                        style={{ height: `${(vals.ingresos / maxGrafico) * 100}%`, minHeight: vals.ingresos > 0 ? 2 : 0 }}
+                        title={`Ingresos: ${formatMonto(vals.ingresos)}`} />
+                      <div className="w-4 bg-red-400 rounded-t"
+                        style={{ height: `${(vals.egresos / maxGrafico) * 100}%`, minHeight: vals.egresos > 0 ? 2 : 0 }}
+                        title={`Egresos: ${formatMonto(vals.egresos)}`} />
                     </div>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">{dia.slice(8)}</span>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">{labelGrafico(key)}</span>
                   </div>
                 ))}
               </div>
@@ -170,43 +219,89 @@ export default function ArqueoPage() {
             </div>
           )}
 
-          {/* Tabla de movimientos */}
-          <div className="bg-white rounded-xl shadow border overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Movimientos del período ({data.movimientos.length})</h3>
-              <button onClick={() => window.print()} className="text-sm text-blue-600 hover:underline print:hidden">
-                🖨️ Imprimir
-              </button>
-            </div>
-            <div className="overflow-x-auto">
+          {/* Tabla por mes (solo modo año) */}
+          {modo === "anio" && Object.keys(porMes).length > 0 && (
+            <div className="bg-white rounded-xl shadow border overflow-hidden mb-6">
+              <div className="px-4 py-3 border-b">
+                <h3 className="font-semibold text-gray-800">Resumen por mes — {anio}</h3>
+              </div>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b">
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Fecha/Hora</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Tipo</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Patente</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Concepto/Detalle</th>
-                    <th className="px-4 py-2 text-right font-semibold text-gray-600">Monto</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-600">Mes</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-600">Ingresos</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-600">Egresos</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-600">Neto</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.movimientos.map((m, i) => (
-                    <tr key={m.id} className={`border-b ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                      <td className="px-4 py-2 whitespace-nowrap text-gray-500">
-                        {format(new Date(m.fecha), "dd/MM HH:mm")}
-                      </td>
-                      <td className={`px-4 py-2 font-medium ${colorTipo[m.tipo]}`}>{labelTipo[m.tipo]}</td>
-                      <td className="px-4 py-2 font-mono">{m.patente || "—"}</td>
-                      <td className="px-4 py-2 text-gray-600">{m.concepto?.nombre || m.descripcion || "—"}</td>
-                      <td className={`px-4 py-2 text-right font-medium ${["egreso", "gasto"].includes(m.tipo) ? "text-red-600" : "text-gray-900"}`}>
-                        {formatMonto(parseFloat(m.monto))}
-                      </td>
-                    </tr>
-                  ))}
+                  {Object.entries(porMes).sort(([a], [b]) => a.localeCompare(b)).map(([key, vals], i) => {
+                    const [y, m] = key.split("-").map(Number);
+                    const neto = vals.ingresos - vals.egresos;
+                    return (
+                      <tr key={key} className={`border-b ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                        <td className="px-4 py-2 font-medium text-gray-700 capitalize">
+                          {format(new Date(y, m - 1, 1), "MMMM yyyy", { locale: es })}
+                        </td>
+                        <td className="px-4 py-2 text-right text-green-700 font-medium">{formatMonto(vals.ingresos)}</td>
+                        <td className="px-4 py-2 text-right text-red-600 font-medium">{formatMonto(vals.egresos)}</td>
+                        <td className={`px-4 py-2 text-right font-bold ${neto >= 0 ? "text-blue-700" : "text-red-700"}`}>{formatMonto(neto)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
+                <tfoot>
+                  <tr className="bg-gray-100 border-t-2 font-bold">
+                    <td className="px-4 py-2 text-gray-700">Total {anio}</td>
+                    <td className="px-4 py-2 text-right text-green-700">{formatMonto(data.resumen.ingresos)}</td>
+                    <td className="px-4 py-2 text-right text-red-600">{formatMonto(data.resumen.egresos)}</td>
+                    <td className={`px-4 py-2 text-right ${data.resumen.neto >= 0 ? "text-blue-700" : "text-red-700"}`}>{formatMonto(data.resumen.neto)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
-          </div>
+          )}
+
+          {/* Tabla de movimientos (oculta en modo año por volumen) */}
+          {modo !== "anio" && (
+            <div className="bg-white rounded-xl shadow border overflow-hidden">
+              <div className="px-4 py-3 border-b flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">Movimientos del período ({data.movimientos.length})</h3>
+                <button onClick={() => window.print()} className="text-sm text-blue-600 hover:underline print:hidden">🖨️ Imprimir</button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      <th className="px-4 py-2 text-left font-semibold text-gray-600">Fecha/Hora</th>
+                      <th className="px-4 py-2 text-left font-semibold text-gray-600">Tipo</th>
+                      <th className="px-4 py-2 text-left font-semibold text-gray-600">Patente</th>
+                      <th className="px-4 py-2 text-left font-semibold text-gray-600">Concepto/Detalle</th>
+                      <th className="px-4 py-2 text-right font-semibold text-gray-600">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.movimientos.length === 0 && (
+                      <tr><td colSpan={5} className="text-center py-8 text-gray-400">Sin movimientos en este período</td></tr>
+                    )}
+                    {data.movimientos.map((m, i) => (
+                      <tr key={m.id} className={`border-b ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                        <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                          {format(new Date(m.fecha), "dd/MM HH:mm")}
+                        </td>
+                        <td className={`px-4 py-2 font-medium ${colorTipo[m.tipo] ?? "text-gray-600"}`}>{labelTipo[m.tipo] ?? m.tipo}</td>
+                        <td className="px-4 py-2 font-mono">{m.patente || "—"}</td>
+                        <td className="px-4 py-2 text-gray-600">{m.concepto?.nombre || m.descripcion || "—"}</td>
+                        <td className={`px-4 py-2 text-right font-medium ${["egreso", "gasto"].includes(m.tipo) ? "text-red-600" : "text-gray-900"}`}>
+                          {formatMonto(parseFloat(m.monto))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

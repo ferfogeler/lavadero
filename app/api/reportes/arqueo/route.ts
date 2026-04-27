@@ -10,27 +10,70 @@ export async function GET(req: NextRequest) {
 
   if (!desde || !hasta) return NextResponse.json({ error: "desde y hasta requeridos" }, { status: 400 });
 
-  const h = new Date(hasta);
-  h.setDate(h.getDate() + 1);
+  // Parse as local noon to avoid UTC±offset shifting the date
+  const desdeDate = new Date(desde + "T12:00:00");
+  desdeDate.setHours(0, 0, 0, 0);
+  const hastaDate = new Date(hasta + "T12:00:00");
+  hastaDate.setHours(23, 59, 59, 999);
 
   const movimientos = await prisma.movimientoCaja.findMany({
-    where: { fecha: { gte: new Date(desde), lt: h } },
+    where: { fecha: { gte: desdeDate, lte: hastaDate } },
     include: { cliente: true, concepto: true, turno: true },
     orderBy: { fecha: "asc" },
   });
 
-  type Mov = (typeof movimientos)[number];
+  // Include confirmed/completed turnos without a real MovimientoCaja (same as caja page)
+  const turnosSinMov = await prisma.turno.findMany({
+    where: {
+      fecha: { gte: desdeDate, lte: hastaDate },
+      estado: { in: ["confirmado", "completado"] },
+      movimiento: null,
+    },
+    include: { cliente: true },
+  });
 
-  const ingresos = movimientos
-    .filter((m: Mov) => ["lavado", "estacionamiento", "ingreso"].includes(m.tipo))
-    .reduce((acc: number, m: Mov) => acc + Number(m.monto), 0);
+  const configsServicio = turnosSinMov.length > 0
+    ? await prisma.configuracionServicio.findMany()
+    : [];
+  const precioServicioMap: Record<string, number> = {};
+  const precioFallback: Record<string, number> = {};
+  for (const c of configsServicio) {
+    precioServicioMap[`${c.tipo_vehiculo}__${c.servicio}`] = Number(c.precio);
+    if (c.servicio === "completo") precioFallback[c.tipo_vehiculo] = Number(c.precio);
+  }
 
-  const egresos = movimientos
-    .filter((m: Mov) => ["egreso", "gasto"].includes(m.tipo))
-    .reduce((acc: number, m: Mov) => acc + Number(m.monto), 0);
+  const turnosVirtuales = turnosSinMov.map((t) => {
+    const srv = (t as { servicio?: string | null }).servicio || "completo";
+    const monto = precioServicioMap[`${t.tipo_vehiculo}__${srv}`] ?? precioFallback[t.tipo_vehiculo] ?? 0;
+    return {
+      id: -(t.id),
+      fecha: t.fecha,
+      tipo: "lavado" as const,
+      patente: t.patente,
+      monto: String(monto),
+      descripcion: `Lavado ${t.tipo_vehiculo}`,
+      horaEntrada: null,
+      horaSalida: null,
+      cliente: t.cliente,
+      concepto: null,
+    };
+  });
 
-  const porTipo = movimientos.reduce(
-    (acc: Record<string, number>, m: Mov) => {
+  const todos = [
+    ...movimientos.filter((m) => !(m.tipo === "estacionamiento" && !m.horaSalida)),
+    ...turnosVirtuales,
+  ].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+  const ingresos = todos
+    .filter((m) => ["lavado", "estacionamiento", "ingreso"].includes(m.tipo))
+    .reduce((acc, m) => acc + Number(m.monto), 0);
+
+  const egresos = todos
+    .filter((m) => ["egreso", "gasto"].includes(m.tipo))
+    .reduce((acc, m) => acc + Number(m.monto), 0);
+
+  const porTipo = todos.reduce(
+    (acc: Record<string, number>, m) => {
       acc[m.tipo] = (acc[m.tipo] || 0) + Number(m.monto);
       return acc;
     },
@@ -38,8 +81,8 @@ export async function GET(req: NextRequest) {
   );
 
   const porDia: Record<string, { ingresos: number; egresos: number }> = {};
-  for (const m of movimientos) {
-    const dia = m.fecha.toISOString().slice(0, 10);
+  for (const m of todos) {
+    const dia = new Date(m.fecha).toISOString().slice(0, 10);
     if (!porDia[dia]) porDia[dia] = { ingresos: 0, egresos: 0 };
     if (["lavado", "estacionamiento", "ingreso"].includes(m.tipo)) {
       porDia[dia].ingresos += Number(m.monto);
@@ -49,7 +92,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    movimientos,
+    movimientos: todos,
     resumen: { ingresos, egresos, neto: ingresos - egresos, porTipo },
     porDia,
   });
