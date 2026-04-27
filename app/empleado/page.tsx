@@ -23,7 +23,6 @@ interface Turno {
 
 type Vista = "semana" | "dia";
 
-const ESTADOS = ["completado", "cancelado"] as const;
 
 export default function EmpleadoTurnosPage() {
   const [vista, setVista] = useState<Vista>("dia");
