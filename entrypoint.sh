@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-echo "→ Corriendo migraciones..."
-prisma migrate deploy
+echo "→ Aplicando cambios de schema..."
+prisma db push --accept-data-loss
 
 echo "→ Iniciando servidor..."
 exec node server.js

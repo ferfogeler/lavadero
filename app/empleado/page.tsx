@@ -7,7 +7,7 @@ import { Toast, useToast } from "@/components/Toast";
 import { EstadoBadge } from "@/components/Badge";
 import { Spinner } from "@/components/Spinner";
 import { CalendarioMini } from "@/components/CalendarioMini";
-import { labelTipoVehiculo, formatMonto } from "@/lib/utils";
+import { labelTipoVehiculo, labelServicio, formatMonto } from "@/lib/utils";
 
 interface Turno {
   id: number;
@@ -37,6 +37,7 @@ export default function EmpleadoTurnosPage() {
 
   // Estado para nuevo turno
   const [nuevoTipo, setNuevoTipo] = useState("auto");
+  const [nuevoServicio, setNuevoServicio] = useState("completo");
   const [nuevoFecha, setNuevoFecha] = useState<Date | null>(null);
   const [nuevoSlots, setNuevoSlots] = useState<string[]>([]);
   const [nuevoHora, setNuevoHora] = useState<string | null>(null);
@@ -45,9 +46,10 @@ export default function EmpleadoTurnosPage() {
   const [nuevoApellido, setNuevoApellido] = useState("");
   const [nuevoCelular, setNuevoCelular] = useState("");
   const [guardando, setGuardando] = useState(false);
-  const [nuevoStep, setNuevoStep] = useState<1 | 2 | 3>(1);
+  const [nuevoStep, setNuevoStep] = useState<1 | 2 | 3 | 4>(1);
   const [nuevoClienteEncontrado, setNuevoClienteEncontrado] = useState<boolean | null>(null);
-  const [configsLavado, setConfigsLavado] = useState<Record<string, { precio: number; duracion_minutos: number }>>({});
+  // grouped: { auto: { completo: {...}, ... }, ... }
+  const [configsLavado, setConfigsLavado] = useState<Record<string, Record<string, { precio: number; duracion_minutos: number; activo: boolean }>>>({});
   const [urlBase, setUrlBase] = useState("http://localhost:3000");
   const [whatsappPendiente, setWhatsappPendiente] = useState<{ url: string; titulo: string } | null>(null);
 
@@ -74,16 +76,19 @@ export default function EmpleadoTurnosPage() {
       fetch("/api/configuracion/lavado").then((r) => r.json()),
       fetch("/api/configuracion/general").then((r) => r.json()),
     ]).then(([lavado, general]) => {
-      const cfg: Record<string, { precio: number; duracion_minutos: number }> = {};
-      for (const c of lavado) cfg[c.tipo_vehiculo] = c;
-      setConfigsLavado(cfg);
+      const grouped: Record<string, Record<string, { precio: number; duracion_minutos: number; activo: boolean }>> = {};
+      for (const c of lavado) {
+        if (!grouped[c.tipo_vehiculo]) grouped[c.tipo_vehiculo] = {};
+        grouped[c.tipo_vehiculo][c.servicio] = { precio: Number(c.precio), duracion_minutos: c.duracion_minutos, activo: c.activo };
+      }
+      setConfigsLavado(grouped);
       setUrlBase(general.url_base || "http://localhost:3000");
     });
   }, []);
 
-  const cargarSlotsNuevo = async (fecha: Date, tipo: string) => {
+  const cargarSlotsNuevo = async (fecha: Date, tipo: string, servicio: string) => {
     const f = format(fecha, "yyyy-MM-dd");
-    const res = await fetch(`/api/turnos/disponibles?fecha=${f}&tipo=${tipo}`);
+    const res = await fetch(`/api/turnos/disponibles?fecha=${f}&tipo=${tipo}&servicio=${servicio}`);
     const data = await res.json();
     setNuevoSlots(data.slots || []);
     setNuevoHora(null);
@@ -91,7 +96,7 @@ export default function EmpleadoTurnosPage() {
 
   const handleNuevoFechaSelect = (fecha: Date) => {
     setNuevoFecha(fecha);
-    cargarSlotsNuevo(fecha, nuevoTipo);
+    cargarSlotsNuevo(fecha, nuevoTipo, nuevoServicio);
   };
 
   const buscarClienteNuevo = async (pat: string) => {
@@ -124,6 +129,7 @@ export default function EmpleadoTurnosPage() {
       body: JSON.stringify({
         patente: nuevoPatente || null,
         tipo_vehiculo: nuevoTipo,
+        servicio: nuevoServicio,
         fecha: format(nuevoFecha!, "yyyy-MM-dd"),
         hora_inicio: nuevoHora,
         creadoPor: "empleado",
@@ -140,22 +146,23 @@ export default function EmpleadoTurnosPage() {
       if (celularDestino) {
         const enlace = `${urlBase}/turno/${turno.tokenModificacion}`;
         const fechaFmt = format(nuevoFecha!, "dd/MM/yyyy");
-        const precio = configsLavado[nuevoTipo]?.precio;
+        const cfg = configsLavado[nuevoTipo]?.[nuevoServicio];
         const texto = encodeURIComponent(
           `🚿 *¡Turno confirmado!*\n\n` +
           `👋 Hola *${nuevoNombre} ${nuevoApellido}*\n` +
           `🚗 *Patente:* ${nuevoPatente}\n` +
           `🏎️ *Vehículo:* ${labelTipoVehiculo(nuevoTipo)}\n` +
+          `✨ *Servicio:* ${labelServicio(nuevoServicio)}\n` +
           `📅 *Fecha:* ${fechaFmt}\n` +
           `⏰ *Hora:* ${nuevoHora}\n` +
-          (precio ? `💰 *Precio:* ${formatMonto(precio)}\n` : "") +
+          (cfg ? `💰 *Precio:* ${formatMonto(cfg.precio)}\n` : "") +
           `\n🔗 *Modificar o cancelar tu turno:*\n${enlace}`
         );
         setWhatsappPendiente({ url: `https://wa.me/${celularDestino}?text=${texto}`, titulo: "Enviar confirmación al cliente" });
       }
 
       setNuevoPatente(""); setNuevoNombre(""); setNuevoApellido(""); setNuevoCelular("");
-      setNuevoFecha(null); setNuevoHora(null); setNuevoClienteEncontrado(null);
+      setNuevoFecha(null); setNuevoHora(null); setNuevoClienteEncontrado(null); setNuevoServicio("completo");
       cargarTurnos();
     } else {
       show("Error al crear turno", "error");
@@ -330,38 +337,68 @@ export default function EmpleadoTurnosPage() {
       </Modal>
 
       {/* Modal nuevo turno */}
-      <Modal open={modalNuevo} onClose={() => { setModalNuevo(false); setNuevoStep(1); setNuevoClienteEncontrado(null); }} title="Nuevo turno" maxWidth="max-w-2xl">
+      <Modal open={modalNuevo} onClose={() => { setModalNuevo(false); setNuevoStep(1); setNuevoClienteEncontrado(null); setNuevoServicio("completo"); }} title="Nuevo turno" maxWidth="max-w-2xl">
         <div>
+          {/* PASO 1: Tipo de vehículo */}
           {nuevoStep === 1 && (
             <div>
               <p className="text-sm font-medium text-gray-700 mb-3">Tipo de vehículo:</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {(["auto", "camioneta", "suv", "moto"] as const).map((t) => {
-                  const cfg = configsLavado[t];
+                  const tipoConfigs = configsLavado[t];
+                  const precioMin = tipoConfigs ? Math.min(...Object.values(tipoConfigs).filter(c => c.activo).map(c => c.precio)) : null;
                   return (
                     <button
                       key={t}
-                      onClick={() => { setNuevoTipo(t); if (nuevoFecha) cargarSlotsNuevo(nuevoFecha, t); }}
+                      onClick={() => { setNuevoTipo(t); setNuevoServicio("completo"); setNuevoStep(2); }}
                       className={`p-3 border-2 rounded-xl text-left transition ${nuevoTipo === t ? "border-blue-500 bg-blue-50 text-blue-700" : "hover:border-gray-300"}`}
                     >
                       <div className="text-sm font-semibold">{labelTipoVehiculo(t)}</div>
-                      {cfg && (
-                        <div className="text-xs mt-0.5 text-gray-500">
-                          {formatMonto(cfg.precio)} · {cfg.duracion_minutos} min
-                        </div>
+                      {precioMin != null && (
+                        <div className="text-xs mt-0.5 text-gray-500">desde {formatMonto(precioMin)}</div>
                       )}
                     </button>
                   );
                 })}
               </div>
-              <button onClick={() => setNuevoStep(2)} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 font-medium">
-                Siguiente →
-              </button>
             </div>
           )}
+
+          {/* PASO 2: Tipo de servicio */}
           {nuevoStep === 2 && (
             <div>
               <button onClick={() => setNuevoStep(1)} className="text-blue-600 text-sm mb-3">← Volver</button>
+              <p className="text-sm font-medium text-gray-700 mb-3">Servicio para {labelTipoVehiculo(nuevoTipo)}:</p>
+              <div className="space-y-2 mb-4">
+                {["completo", "externo", "aspirado"].map((srv) => {
+                  const cfg = configsLavado[nuevoTipo]?.[srv];
+                  if (!cfg?.activo) return null;
+                  const ICONOS: Record<string, string> = { completo: "🚿", externo: "💧", aspirado: "🌀" };
+                  return (
+                    <button
+                      key={srv}
+                      onClick={() => { setNuevoServicio(srv); setNuevoStep(3); if (nuevoFecha) cargarSlotsNuevo(nuevoFecha, nuevoTipo, srv); }}
+                      className={`w-full flex items-center justify-between p-3 border-2 rounded-xl transition text-left ${nuevoServicio === srv ? "border-blue-500 bg-blue-50" : "hover:border-gray-300"}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{ICONOS[srv]}</span>
+                        <div>
+                          <div className="text-sm font-semibold text-gray-800">{labelServicio(srv)}</div>
+                          <div className="text-xs text-gray-500">{cfg.duracion_minutos} min</div>
+                        </div>
+                      </div>
+                      <span className="font-bold text-blue-700">{formatMonto(cfg.precio)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* PASO 3: Fecha y hora */}
+          {nuevoStep === 3 && (
+            <div>
+              <button onClick={() => setNuevoStep(2)} className="text-blue-600 text-sm mb-3">← Volver</button>
               <div className="grid md:grid-cols-2 gap-4">
                 <CalendarioMini selected={nuevoFecha} onSelect={handleNuevoFechaSelect} disablePast={false} />
                 <div>
@@ -380,7 +417,7 @@ export default function EmpleadoTurnosPage() {
                 </div>
               </div>
               <button
-                onClick={() => setNuevoStep(3)}
+                onClick={() => setNuevoStep(4)}
                 disabled={!nuevoFecha || !nuevoHora}
                 className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium"
               >
@@ -388,9 +425,10 @@ export default function EmpleadoTurnosPage() {
               </button>
             </div>
           )}
-          {nuevoStep === 3 && (
+          {/* PASO 4: Datos del cliente */}
+          {nuevoStep === 4 && (
             <div>
-              <button onClick={() => { setNuevoStep(2); setNuevoClienteEncontrado(null); }} className="text-blue-600 text-sm mb-3">← Volver</button>
+              <button onClick={() => { setNuevoStep(3); setNuevoClienteEncontrado(null); }} className="text-blue-600 text-sm mb-3">← Volver</button>
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Patente *</label>

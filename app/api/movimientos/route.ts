@@ -43,24 +43,39 @@ export async function GET(req: NextRequest) {
     });
 
     if (turnosSinMovimiento.length > 0) {
-      const configs = await prisma.configuracionLavado.findMany();
-      const precioMap = Object.fromEntries(configs.map((c) => [c.tipo_vehiculo, c.precio]));
+      const configsServicio = await prisma.configuracionServicio.findMany();
+      // precio por (tipo_vehiculo, servicio)
+      const precioServicioMap: Record<string, number> = {};
+      for (const c of configsServicio) {
+        precioServicioMap[`${c.tipo_vehiculo}__${c.servicio}`] = Number(c.precio);
+      }
+      // fallback: precio por tipo_vehiculo (completo)
+      const precioFallback: Record<string, number> = {};
+      for (const c of configsServicio.filter((c) => c.servicio === "completo")) {
+        precioFallback[c.tipo_vehiculo] = Number(c.precio);
+      }
 
-      const turnosComoMov = turnosSinMovimiento.map((t) => ({
-        id: -(t.id),
-        fecha: t.fecha,
-        tipo: "lavado",
-        patente: t.patente,
-        conceptoId: null,
-        monto: (precioMap[t.tipo_vehiculo] ?? 0).toString(),
-        descripcion: `Lavado ${t.tipo_vehiculo} - ${t.patente ?? "s/patente"}`,
-        horaEntrada: null,
-        horaSalida: null,
-        turnoId: t.id,
-        cliente: t.cliente,
-        concepto: null,
-        turno: t,
-      }));
+      const turnosComoMov = turnosSinMovimiento.map((t) => {
+        const srv = (t as { servicio?: string | null }).servicio || "completo";
+        const monto = precioServicioMap[`${t.tipo_vehiculo}__${srv}`]
+          ?? precioFallback[t.tipo_vehiculo]
+          ?? 0;
+        return {
+          id: -(t.id),
+          fecha: t.fecha,
+          tipo: "lavado",
+          patente: t.patente,
+          conceptoId: null,
+          monto: monto.toString(),
+          descripcion: `Lavado ${t.tipo_vehiculo} - ${t.patente ?? "s/patente"}`,
+          horaEntrada: null,
+          horaSalida: null,
+          turnoId: t.id,
+          cliente: t.cliente,
+          concepto: null,
+          turno: t,
+        };
+      });
 
       return NextResponse.json([...movimientos, ...turnosComoMov]);
     }

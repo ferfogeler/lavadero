@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const fecha = searchParams.get("fecha");
   const tipo = searchParams.get("tipo");
+  const servicio = searchParams.get("servicio") || "completo";
   const excluirTurnoId = searchParams.get("excluir");
 
   if (!fecha || !tipo) {
@@ -15,7 +16,9 @@ export async function GET(req: NextRequest) {
   }
 
   const [config, configGeneral, turnosDelDia] = await Promise.all([
-    prisma.configuracionLavado.findUnique({ where: { tipo_vehiculo: tipo as "auto" | "camioneta" | "suv" | "moto" } }),
+    prisma.configuracionServicio.findUnique({
+      where: { tipo_vehiculo_servicio: { tipo_vehiculo: tipo, servicio } },
+    }),
     prisma.configuracionGeneral.findMany(),
     prisma.turno.findMany({
       where: {
@@ -26,11 +29,12 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  if (!config) return NextResponse.json({ error: "Tipo no configurado" }, { status: 400 });
+  if (!config) return NextResponse.json({ error: "Servicio no configurado" }, { status: 400 });
 
   const cfg = Object.fromEntries(configGeneral.map((c: { clave: string; valor: string }) => [c.clave, c.valor]));
-  const apertura = cfg.horario_apertura || "08:00";
-  const cierre = cfg.horario_cierre || "20:00";
+  // Usar horarios específicos de lavado, con fallback a los generales
+  const apertura = cfg.horario_apertura_lavado || cfg.horario_apertura || "08:00";
+  const cierre = cfg.horario_cierre_lavado || cfg.horario_cierre || "18:00";
 
   const ocupados = turnosDelDia.map((t: { hora_inicio: Date; hora_fin: Date }) => ({
     inicio: t.hora_inicio.toISOString().slice(11, 16),

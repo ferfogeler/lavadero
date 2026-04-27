@@ -23,6 +23,7 @@ model Turno {
   patente            String?
   cliente            Cliente?     @relation(fields: [patente], references: [patente])
   tipo_vehiculo      TipoVehiculo
+  servicio           String?      @default("completo")
   fecha              DateTime     @db.Date
   hora_inicio        DateTime     @db.Time
   hora_fin           DateTime     @db.Time
@@ -62,6 +63,17 @@ model ConfiguracionLavado {
   precio            Decimal      @db.Decimal(10, 2)
   duracion_minutos  Int
   activo            Boolean      @default(true)
+}
+
+model ConfiguracionServicio {
+  id               Int    @id @default(autoincrement())
+  tipo_vehiculo    String
+  servicio         String
+  precio           Decimal @db.Decimal(10, 2)
+  duracion_minutos Int
+  activo           Boolean @default(true)
+
+  @@unique([tipo_vehiculo, servicio])
 }
 
 model ConfiguracionGeneral {

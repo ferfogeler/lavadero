@@ -20,6 +20,15 @@ export function formatMonto(monto: number | string): string {
   }).format(n);
 }
 
+export function labelServicio(servicio: string): string {
+  const labels: Record<string, string> = {
+    completo: "Lavado completo",
+    externo:  "Lavado exterior",
+    aspirado: "Aspirado",
+  };
+  return labels[servicio] ?? servicio;
+}
+
 export function labelTipoVehiculo(tipo: string): string {
   const labels: Record<string, string> = {
     auto: "Auto",

@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  // ConfiguracionLavado
+  // ConfiguracionLavado (legacy - kept for compat)
   const lavados = [
     { tipo_vehiculo: "auto" as const, precio: 8000, duracion_minutos: 45 },
     { tipo_vehiculo: "camioneta" as const, precio: 10000, duracion_minutos: 60 },
@@ -18,12 +18,44 @@ async function main() {
     });
   }
 
+  // ConfiguracionServicio (tipo_vehiculo x servicio)
+  const preciosBase: Record<string, { precio: number; duracion: number }> = {
+    auto:      { precio: 8000,  duracion: 45 },
+    camioneta: { precio: 10000, duracion: 60 },
+    suv:       { precio: 11000, duracion: 60 },
+    moto:      { precio: 4500,  duracion: 30 },
+  };
+  const servicios = [
+    { servicio: "completo", precioPct: 1.0,  durPct: 1.0  },
+    { servicio: "externo",  precioPct: 0.70, durPct: 0.70 },
+    { servicio: "aspirado", precioPct: 0.50, durPct: 0.55 },
+  ];
+  for (const [tipo, base] of Object.entries(preciosBase)) {
+    for (const s of servicios) {
+      await prisma.configuracionServicio.upsert({
+        where: { tipo_vehiculo_servicio: { tipo_vehiculo: tipo, servicio: s.servicio } },
+        update: {},
+        create: {
+          tipo_vehiculo: tipo,
+          servicio: s.servicio,
+          precio: Math.round(base.precio * s.precioPct),
+          duracion_minutos: Math.round(base.duracion * s.durPct),
+          activo: true,
+        },
+      });
+    }
+  }
+
   // ConfiguracionGeneral
   const configs = [
     { clave: "whatsapp_lavadero", valor: "3765061400" },
     { clave: "nombre_negocio", valor: "Lavadero Express" },
     { clave: "horario_apertura", valor: "08:00" },
     { clave: "horario_cierre", valor: "20:00" },
+    { clave: "horario_apertura_lavado", valor: "08:00" },
+    { clave: "horario_cierre_lavado", valor: "18:00" },
+    { clave: "horario_apertura_estacionamiento", valor: "08:00" },
+    { clave: "horario_cierre_estacionamiento", valor: "20:00" },
     { clave: "tarifa_estacionamiento_por_minuto", valor: "50" },
     { clave: "precio_estadia_completa", valor: "2000" },
     { clave: "precio_media_estadia", valor: "1000" },
@@ -66,48 +98,6 @@ async function main() {
     update: {},
     create: { patente: "GHI789", nombre: "Carlos", apellido: "López", celular: "3765000003", tipo_vehiculo: "moto" },
   });
-
-  // Turnos de ejemplo
-  const hoy = new Date();
-  const manana = new Date(hoy);
-  manana.setDate(hoy.getDate() + 1);
-
-  const turnoExistente = await prisma.turno.findFirst({ where: { patente: "ABC123" } });
-  if (!turnoExistente) {
-    await prisma.turno.create({
-      data: {
-        patente: "ABC123",
-        tipo_vehiculo: "auto",
-        fecha: hoy,
-        hora_inicio: new Date("1970-01-01T09:00:00"),
-        hora_fin: new Date("1970-01-01T09:45:00"),
-        estado: "confirmado",
-        creadoPor: "web",
-      },
-    });
-    await prisma.turno.create({
-      data: {
-        patente: "DEF456",
-        tipo_vehiculo: "suv",
-        fecha: manana,
-        hora_inicio: new Date("1970-01-01T10:00:00"),
-        hora_fin: new Date("1970-01-01T11:00:00"),
-        estado: "pendiente",
-        creadoPor: "web",
-      },
-    });
-    await prisma.turno.create({
-      data: {
-        patente: "GHI789",
-        tipo_vehiculo: "moto",
-        fecha: hoy,
-        hora_inicio: new Date("1970-01-01T14:00:00"),
-        hora_fin: new Date("1970-01-01T14:30:00"),
-        estado: "completado",
-        creadoPor: "empleado",
-      },
-    });
-  }
 
   console.log("✅ Seed completado");
 }
