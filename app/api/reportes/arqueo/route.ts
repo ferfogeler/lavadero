@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     if (c.servicio === "completo") precioFallback[c.tipo_vehiculo] = Number(c.precio);
   }
 
-  const turnosVirtuales = turnosSinMov.map((t) => {
+  const turnosVirtuales = turnosSinMov.map((t: typeof turnosSinMov[number]) => {
     const srv = (t as { servicio?: string | null }).servicio || "completo";
     const monto = precioServicioMap[`${t.tipo_vehiculo}__${srv}`] ?? precioFallback[t.tipo_vehiculo] ?? 0;
     return {
@@ -59,10 +59,12 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const todos = [
-    ...movimientos.filter((m) => !(m.tipo === "estacionamiento" && !m.horaSalida)),
+  type TodoItem = { fecha: Date | string; tipo: string; monto: string | number | { toString(): string } };
+  type MovRow = { tipo: string; horaSalida: Date | string | null };
+  const todos: TodoItem[] = [
+    ...movimientos.filter((m: MovRow) => !(m.tipo === "estacionamiento" && !m.horaSalida)),
     ...turnosVirtuales,
-  ].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  ].sort((a: TodoItem, b: TodoItem) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
   const ingresos = todos
     .filter((m) => ["lavado", "estacionamiento", "ingreso"].includes(m.tipo))

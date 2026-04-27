@@ -172,23 +172,31 @@ export default function CajaPage() {
 
   // Calcula el total al finalizar estacionamiento
   const calcularTotal = (mov: Movimiento, entrada: Date, salida: Date) => {
-    const minutos = Math.ceil((salida.getTime() - entrada.getTime()) / 60000);
     const tipo = mov.descripcion ?? "";
 
+    // Estadía mensual: sin cobro por visita (el pago mensual es aparte)
+    if (tipo === "mensual_completa" || tipo === "mensual_media") {
+      return { total: 0, minutos: 0, horas: null, esMensual: true };
+    }
+
+    // Guard contra horaEntrada corrupta (ej. 1970): si la diferencia es > 48h, usar 0
+    const rawMinutos = Math.ceil((salida.getTime() - entrada.getTime()) / 60000);
+    const minutos = rawMinutos > 0 && rawMinutos <= 48 * 60 ? rawMinutos : 0;
+
     if (tipo === "diaria" || tipo === "completa") {
-      return { total: precioDiaria, minutos, horas: null };
+      return { total: precioDiaria, minutos, horas: null, esMensual: false };
     }
     if (tipo === "media_diaria" || tipo === "media") {
-      return { total: precioMediaDiaria, minutos, horas: null };
+      return { total: precioMediaDiaria, minutos, horas: null, esMensual: false };
     }
     if (tipo === "hora") {
       const horasBase = Math.floor(minutos / 60);
       const minutosExtra = minutos - horasBase * 60;
       const horasCobradas = Math.max(1, horasBase + (minutosExtra > 10 ? 1 : 0));
-      return { total: horasCobradas * precioHora, minutos, horas: horasCobradas };
+      return { total: horasCobradas * precioHora, minutos, horas: horasCobradas, esMensual: false };
     }
     // fraccion (legacy: por minuto)
-    return { total: minutos * tarifa, minutos, horas: null };
+    return { total: minutos * tarifa, minutos, horas: null, esMensual: false };
   };
 
   // Calcula monto mensual con interés
@@ -867,7 +875,8 @@ export default function CajaPage() {
         {modalFinalizar && (() => {
           const entrada = new Date(modalFinalizar.horaEntrada!);
           const salida = new Date();
-          const { total, minutos, horas } = calcularTotal(modalFinalizar, entrada, salida);
+          const entradaValida = entrada.getFullYear() > 2000;
+          const { total, minutos, horas, esMensual } = calcularTotal(modalFinalizar, entrada, salida);
           return (
             <div className="space-y-4">
               <div className="bg-green-50 rounded-xl p-4 space-y-2 text-sm">
@@ -883,13 +892,18 @@ export default function CajaPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Entrada</span>
-                  <span>{format(entrada, "HH:mm")}</span>
+                  <span>{entradaValida ? format(entrada, "HH:mm") : "—"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Salida</span>
                   <span>{format(salida, "HH:mm")}</span>
                 </div>
-                {horas ? (
+                {esMensual ? (
+                  <div className="flex justify-between text-blue-700 font-medium">
+                    <span>Abono mensual</span>
+                    <span>Sin cobro por visita</span>
+                  </div>
+                ) : horas ? (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Horas cobradas</span>
                     <span>{horas} h × {formatMonto(precioHora)}</span>
@@ -902,12 +916,12 @@ export default function CajaPage() {
                 )}
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Total</span>
-                  <span className="text-green-700">{formatMonto(total)}</span>
+                  <span className="text-green-700">{esMensual ? "$ 0" : formatMonto(total)}</span>
                 </div>
               </div>
               <button onClick={() => handleFinalizarEstacionamiento(modalFinalizar)}
                 className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3 font-semibold">
-                Confirmar cobro
+                {esMensual ? "Registrar salida" : "Confirmar cobro"}
               </button>
             </div>
           );

@@ -46,16 +46,16 @@ export async function GET(req: NextRequest) {
       const configsServicio = await prisma.configuracionServicio.findMany();
       // precio por (tipo_vehiculo, servicio)
       const precioServicioMap: Record<string, number> = {};
-      for (const c of configsServicio) {
-        precioServicioMap[`${c.tipo_vehiculo}__${c.servicio}`] = Number(c.precio);
+      for (const cfg of configsServicio) {
+        precioServicioMap[`${cfg.tipo_vehiculo}__${cfg.servicio}`] = Number(cfg.precio);
       }
       // fallback: precio por tipo_vehiculo (completo)
       const precioFallback: Record<string, number> = {};
-      for (const c of configsServicio.filter((c) => c.servicio === "completo")) {
-        precioFallback[c.tipo_vehiculo] = Number(c.precio);
+      for (const cfg of configsServicio.filter((cs: { servicio: string; tipo_vehiculo: string; precio: unknown }) => cs.servicio === "completo")) {
+        precioFallback[cfg.tipo_vehiculo] = Number(cfg.precio);
       }
 
-      const turnosComoMov = turnosSinMovimiento.map((t) => {
+      const turnosComoMov = turnosSinMovimiento.map((t: typeof turnosSinMovimiento[number]) => {
         const srv = (t as { servicio?: string | null }).servicio || "completo";
         const monto = precioServicioMap[`${t.tipo_vehiculo}__${srv}`]
           ?? precioFallback[t.tipo_vehiculo]
