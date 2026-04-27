@@ -80,7 +80,8 @@ export default function CajaPage() {
   const [estNuevoApellido, setEstNuevoApellido] = useState("");
   const [estNuevoCelular, setEstNuevoCelular] = useState("");
   const [estNuevoTipoVehiculo, setEstNuevoTipoVehiculo] = useState("auto");
-  const [estTipoPrecio, setEstTipoPrecio] = useState<"hora" | "diaria" | "media_diaria">("hora");
+  const [estCategoria, setEstCategoria] = useState<"mensual" | "media" | "diaria" | "hora">("diaria");
+  const [estVehiculo, setEstVehiculo] = useState<"moto" | "auto" | "suv">("auto");
   const [guardandoEst, setGuardandoEst] = useState(false);
 
   // ── Movimiento manual ─────────────────────────────────────────────────
@@ -91,12 +92,19 @@ export default function CajaPage() {
   const [guardandoMov, setGuardandoMov] = useState(false);
 
   // ── Precios desde config ──────────────────────────────────────────────
-  const [tarifa, setTarifa] = useState(50);                  // legacy fraccion/min
   const [precioHora, setPrecioHora] = useState(500);
-  const [precioDiaria, setPrecioDiaria] = useState(2000);
-  const [precioMediaDiaria, setPrecioMediaDiaria] = useState(1000);
-  const [precioMensualCompleta, setPrecioMensualCompleta] = useState(25000);
-  const [precioMensualMedia, setPrecioMensualMedia] = useState(15000);
+  // Mensual por vehículo
+  const [precioMensualMoto, setPrecioMensualMoto] = useState(8000);
+  const [precioMensualAuto, setPrecioMensualAuto] = useState(15000);
+  const [precioMensualSuv,  setPrecioMensualSuv]  = useState(20000);
+  // ½ Estadía por vehículo
+  const [precioMediaMoto, setPrecioMediaMoto] = useState(600);
+  const [precioMediaAuto, setPrecioMediaAuto] = useState(1200);
+  const [precioMediaSuv,  setPrecioMediaSuv]  = useState(1800);
+  // Diario por vehículo
+  const [precioDiariaMoto, setPrecioDiariaMoto] = useState(1000);
+  const [precioDiariaAuto, setPrecioDiariaAuto] = useState(2000);
+  const [precioDiariaSuv,  setPrecioDiariaSuv]  = useState(3000);
   const [interesDiarioPct, setInteresDiarioPct] = useState(1.5);
 
   // ── Mensuales ─────────────────────────────────────────────────────────
@@ -114,12 +122,19 @@ export default function CajaPage() {
       fetch("/api/configuracion/general").then((r) => r.json()),
     ]).then(([c, cfg]) => {
       setConceptos(c);
-      setTarifa(parseFloat(cfg.tarifa_estacionamiento_por_minuto) || 50);
       setPrecioHora(parseFloat(cfg.precio_hora) || 500);
-      setPrecioDiaria(parseFloat(cfg.precio_diaria) || parseFloat(cfg.precio_estadia_completa) || 2000);
-      setPrecioMediaDiaria(parseFloat(cfg.precio_media_diaria) || parseFloat(cfg.precio_media_estadia) || 1000);
-      setPrecioMensualCompleta(parseFloat(cfg.precio_mensual_completa) || 25000);
-      setPrecioMensualMedia(parseFloat(cfg.precio_mensual_media) || 15000);
+      // Mensual
+      setPrecioMensualMoto(parseFloat(cfg.precio_mensual_moto) || 8000);
+      setPrecioMensualAuto(parseFloat(cfg.precio_mensual_auto) || 15000);
+      setPrecioMensualSuv (parseFloat(cfg.precio_mensual_suv)  || 20000);
+      // ½ Estadía
+      setPrecioMediaMoto(parseFloat(cfg.precio_media_moto) || 600);
+      setPrecioMediaAuto(parseFloat(cfg.precio_media_auto) || 1200);
+      setPrecioMediaSuv (parseFloat(cfg.precio_media_suv)  || 1800);
+      // Diario
+      setPrecioDiariaMoto(parseFloat(cfg.precio_diaria_moto) || 1000);
+      setPrecioDiariaAuto(parseFloat(cfg.precio_diaria_auto) || 2000);
+      setPrecioDiariaSuv (parseFloat(cfg.precio_diaria_suv)  || 3000);
       setInteresDiarioPct(parseFloat(cfg.interes_mensual_diario_pct) || 1.5);
     });
   }, []);
@@ -167,15 +182,32 @@ export default function CajaPage() {
     if (upper.length >= 6) {
       const c = await buscarCliente(upper);
       setEstCliente(c);
+      if (c?.tipo_vehiculo) {
+        const v = c.tipo_vehiculo === "camioneta" ? "suv" : c.tipo_vehiculo as "moto" | "auto" | "suv";
+        setEstVehiculo(v);
+      }
     }
+  };
+
+  // Helper: precio por descripción de tipo estacionamiento
+  const precioParaTipo = (tipo: string): number => {
+    const map: Record<string, number> = {
+      mensual_moto: precioMensualMoto, mensual_auto: precioMensualAuto, mensual_suv: precioMensualSuv,
+      media_moto:   precioMediaMoto,   media_auto:   precioMediaAuto,   media_suv:   precioMediaSuv,
+      diaria_moto:  precioDiariaMoto,  diaria_auto:  precioDiariaAuto,  diaria_suv:  precioDiariaSuv,
+      // legacy
+      diaria: precioDiariaAuto, completa: precioDiariaAuto,
+      media_diaria: precioMediaAuto, media: precioMediaAuto,
+    };
+    return map[tipo] ?? 0;
   };
 
   // Calcula el total al finalizar estacionamiento
   const calcularTotal = (mov: Movimiento, entrada: Date, salida: Date) => {
     const tipo = mov.descripcion ?? "";
 
-    // Estadía mensual: sin cobro por visita (el pago mensual es aparte)
-    if (tipo === "mensual_completa" || tipo === "mensual_media") {
+    // Mensual (cualquier vehículo): sin cobro por visita, el pago mensual es aparte
+    if (tipo.startsWith("mensual_") || tipo === "mensual_completa" || tipo === "mensual_media") {
       return { total: 0, minutos: 0, horas: null, esMensual: true };
     }
 
@@ -183,25 +215,29 @@ export default function CajaPage() {
     const rawMinutos = Math.ceil((salida.getTime() - entrada.getTime()) / 60000);
     const minutos = rawMinutos > 0 && rawMinutos <= 48 * 60 ? rawMinutos : 0;
 
-    if (tipo === "diaria" || tipo === "completa") {
-      return { total: precioDiaria, minutos, horas: null, esMensual: false };
-    }
-    if (tipo === "media_diaria" || tipo === "media") {
-      return { total: precioMediaDiaria, minutos, horas: null, esMensual: false };
-    }
     if (tipo === "hora") {
       const horasBase = Math.floor(minutos / 60);
       const minutosExtra = minutos - horasBase * 60;
       const horasCobradas = Math.max(1, horasBase + (minutosExtra > 10 ? 1 : 0));
       return { total: horasCobradas * precioHora, minutos, horas: horasCobradas, esMensual: false };
     }
-    // fraccion (legacy: por minuto)
-    return { total: minutos * tarifa, minutos, horas: null, esMensual: false };
+
+    // Diario o ½ Estadía por vehículo (y legacy)
+    const precio = precioParaTipo(tipo);
+    return { total: precio, minutos, horas: null, esMensual: false };
   };
 
   // Calcula monto mensual con interés
   const calcularMontoMensual = (m: EstacionamientoMensual) => {
-    const precioBase = m.tipo === "mensual_completa" ? precioMensualCompleta : precioMensualMedia;
+    const precios: Record<string, number> = {
+      mensual_moto: precioMensualMoto,
+      mensual_auto: precioMensualAuto,
+      mensual_suv:  precioMensualSuv,
+      // legacy
+      mensual_completa: precioMensualAuto,
+      mensual_media:    precioMensualAuto,
+    };
+    const precioBase = precios[m.tipo] ?? precioMensualAuto;
     const hoy = new Date();
     const esMesActual = m.mes === hoy.getMonth() + 1 && m.anio === hoy.getFullYear();
     const diasVencidos = esMesActual ? Math.max(0, hoy.getDate() - 10) : 0;
@@ -228,7 +264,7 @@ export default function CajaPage() {
     const res = await fetch("/api/movimientos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tipo: "estacionamiento", patente: estPatente, monto: 0, descripcion: estTipoPrecio, horaEntrada: ahora.toISOString() }),
+      body: JSON.stringify({ tipo: "estacionamiento", patente: estPatente, monto: 0, descripcion: tipoDescripcion, horaEntrada: ahora.toISOString() }),
     });
     if (res.ok) {
       show("Estacionamiento iniciado", "success");
@@ -240,12 +276,12 @@ export default function CajaPage() {
           `🚗 *Patente:* ${estPatente}\n` +
           `📅 *Fecha:* ${format(ahora, "dd/MM/yyyy")}\n` +
           `⏰ *Hora de entrada:* ${format(ahora, "HH:mm")}\n` +
-          `💳 *Tarifa:* ${labelTipoEstacionamiento(estTipoPrecio)}\n\n` +
+          `💳 *Tarifa:* ${labelTipoEstacionamiento(tipoDescripcion)}\n\n` +
           `✅ Te avisamos cuando retires el vehículo. ¡Gracias!`;
         const numero = clienteActivo.celular.replace(/\D/g, "");
         setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
       }
-      setEstPatente(""); setEstCliente(null); setEstTipoPrecio("hora");
+      setEstPatente(""); setEstCliente(null); setEstCategoria("diaria"); setEstVehiculo("auto");
       setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); setEstNuevoTipoVehiculo("auto");
       cargarMovimientos();
     } else {
@@ -394,7 +430,7 @@ export default function CajaPage() {
       setModalCobrarMensual(null);
       if (m.cliente?.celular) {
         const { precioBase, diasVencidos, interes } = calcularMontoMensual(m);
-        const tipoLabel = m.tipo === "mensual_completa" ? "Estadía mensual completa" : "Mensual media estadía";
+        const tipoLabel = labelTipoEstacionamiento(m.tipo);
         const msg =
           `💳 *Pago registrado - Estacionamiento mensual*\n\n` +
           `👋 Hola *${m.cliente.nombre} ${m.cliente.apellido}*\n` +
@@ -439,6 +475,20 @@ export default function CajaPage() {
     egreso: "Egreso",
     gasto: "Gasto",
   };
+
+  // ── Derivados ──────────────────────────────────────────────────────────
+  const tipoDescripcion = estCategoria === "hora" ? "hora" : `${estCategoria}_${estVehiculo}`;
+
+  // Precio a mostrar en el selector de tarifa
+  const precioTipoActual = (() => {
+    if (estCategoria === "hora") return precioHora;
+    const map: Record<string, number> = {
+      mensual_moto: precioMensualMoto, mensual_auto: precioMensualAuto, mensual_suv: precioMensualSuv,
+      media_moto:   precioMediaMoto,   media_auto:   precioMediaAuto,   media_suv:   precioMediaSuv,
+      diaria_moto:  precioDiariaMoto,  diaria_auto:  precioDiariaAuto,  diaria_suv:  precioDiariaSuv,
+    };
+    return map[tipoDescripcion] ?? 0;
+  })();
 
   // ── Render ────────────────────────────────────────────────────────────
   return (
@@ -672,7 +722,7 @@ export default function CajaPage() {
                           {m.cliente ? `${m.cliente.nombre} ${m.cliente.apellido}` : "—"}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
-                          {m.tipo === "mensual_completa" ? "Estadía completa" : "Media estadía"}
+                          {labelTipoEstacionamiento(m.tipo)}
                         </td>
                         <td className="px-4 py-3 text-gray-500 text-xs">
                           {format(new Date(m.fechaAlta), "dd/MM/yyyy")}
@@ -755,7 +805,7 @@ export default function CajaPage() {
       {/* Modal estacionamiento */}
       <Modal
         open={modalEstacionamiento}
-        onClose={() => { setModalEstacionamiento(false); setEstPatente(""); setEstCliente(null); setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); setEstNuevoTipoVehiculo("auto"); }}
+        onClose={() => { setModalEstacionamiento(false); setEstPatente(""); setEstCliente(null); setEstCategoria("diaria"); setEstVehiculo("auto"); setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); setEstNuevoTipoVehiculo("auto"); }}
         title="Nuevo estacionamiento"
       >
         <div className="space-y-4">
@@ -809,24 +859,50 @@ export default function CajaPage() {
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de tarifa *</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2 mb-3">
               {([
-                { value: "hora" as const, label: "🕐 Por hora", sub: formatMonto(precioHora) + "/h" },
-                { value: "diaria" as const, label: "🅿️ Estadía diaria", sub: formatMonto(precioDiaria) },
-                { value: "media_diaria" as const, label: "½ Media estadía", sub: formatMonto(precioMediaDiaria) },
+                { value: "mensual" as const, label: "📅 Mensual" },
+                { value: "media"   as const, label: "½ Estadía" },
+                { value: "diaria"  as const, label: "🅿️ Diario" },
+                { value: "hora"    as const, label: "🕐 Por hora" },
               ]).map((op) => (
-                <button key={op.value} type="button" onClick={() => setEstTipoPrecio(op.value)}
-                  className={`rounded-xl border-2 p-3 text-center transition-colors ${
-                    estTipoPrecio === op.value ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 hover:border-gray-300"
+                <button key={op.value} type="button" onClick={() => setEstCategoria(op.value)}
+                  className={`rounded-xl border-2 p-2.5 text-center transition-colors ${
+                    estCategoria === op.value ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   <div className="text-xs font-semibold">{op.label}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{op.sub}</div>
                 </button>
               ))}
             </div>
-            {estTipoPrecio === "hora" && (
-              <p className="text-xs text-gray-400 mt-2">⏱️ Se cobra por hora. Si supera 10 min de la hora, se redondea a la siguiente.</p>
+            {estCategoria !== "hora" && (
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {([
+                  { value: "moto" as const, label: "🏍 Moto" },
+                  { value: "auto" as const, label: "🚗 Auto" },
+                  { value: "suv"  as const, label: "🚙 SUV/Camioneta" },
+                ]).map((v) => (
+                  <button key={v.value} type="button" onClick={() => setEstVehiculo(v.value)}
+                    className={`rounded-xl border-2 p-2.5 text-center transition-colors ${
+                      estVehiculo === v.value ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">{v.label}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="bg-gray-50 rounded-xl px-4 py-2 text-sm flex justify-between items-center">
+              <span className="text-gray-500">{labelTipoEstacionamiento(tipoDescripcion)}</span>
+              <span className="font-bold text-green-700">
+                {estCategoria === "hora" ? formatMonto(precioHora) + "/h" : formatMonto(precioTipoActual)}
+              </span>
+            </div>
+            {estCategoria === "hora" && (
+              <p className="text-xs text-gray-400 mt-1">⏱️ Se cobra por hora. Si supera 10 min, se redondea a la siguiente.</p>
+            )}
+            {estCategoria === "mensual" && (
+              <p className="text-xs text-gray-400 mt-1">📅 Sin cobro por ingreso — el abono mensual se cobra aparte.</p>
             )}
           </div>
           <p className="text-sm text-gray-500">Se registra la hora de entrada automáticamente.</p>

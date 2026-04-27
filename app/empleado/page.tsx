@@ -190,7 +190,7 @@ export default function EmpleadoTurnosPage() {
     : [fechaBase];
 
   const turnosPorDia = (fecha: Date) =>
-    turnos.filter((t) => t.fecha.slice(0, 10) === format(fecha, "yyyy-MM-dd"))
+    turnos.filter((t) => t.fecha.slice(0, 10) === format(fecha, "yyyy-MM-dd") && t.estado !== "cancelado")
       .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
 
   const colorBg: Record<string, string> = {

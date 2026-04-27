@@ -24,8 +24,9 @@ const TIPOS = [
 ];
 
 const TIPOS_MENSUAL = [
-  { value: "mensual_completa", label: "Estadía completa" },
-  { value: "mensual_media", label: "Media estadía" },
+  { value: "mensual_moto", label: "Moto" },
+  { value: "mensual_auto", label: "Auto" },
+  { value: "mensual_suv",  label: "SUV/Camioneta" },
 ];
 
 const FORM_VACIO = {
@@ -35,7 +36,7 @@ const FORM_VACIO = {
   celular: "",
   tipo_vehiculo: "auto",
   clienteMensual: false,
-  tipoMensual: "mensual_completa",
+  tipoMensual: "mensual_auto",
 };
 
 export function ClientesTabla() {
@@ -80,7 +81,7 @@ export function ClientesTabla() {
       celular: c.celular,
       tipo_vehiculo: c.tipo_vehiculo,
       clienteMensual: c.clienteMensual,
-      tipoMensual: c.tipoMensual || "mensual_completa",
+      tipoMensual: c.tipoMensual || "mensual_auto",
     });
     setModalForm(true);
   };
@@ -147,7 +148,15 @@ export function ClientesTabla() {
 
   const labelTipoMensual = (tipo: string | null) => {
     if (!tipo) return "—";
-    return tipo === "mensual_completa" ? "Estadía completa" : "Media estadía";
+    const map: Record<string, string> = {
+      mensual_moto: "Moto",
+      mensual_auto: "Auto",
+      mensual_suv:  "SUV/Camioneta",
+      // legacy
+      mensual_completa: "Completa",
+      mensual_media:    "Media",
+    };
+    return map[tipo] ?? tipo;
   };
 
   return (

@@ -27,19 +27,34 @@ const SECCIONES = [
     ],
   },
   {
-    titulo: "💰 Tarifas de estacionamiento diario",
+    titulo: "📅 Tarifas de estacionamiento mensual",
     campos: [
-      { clave: "precio_hora", label: "Por hora ($)", placeholder: "500", type: "number" },
-      { clave: "precio_diaria", label: "Estadía diaria ($)", placeholder: "2000", type: "number" },
-      { clave: "precio_media_diaria", label: "Media estadía diaria ($)", placeholder: "1000", type: "number" },
+      { clave: "precio_mensual_moto", label: "Mensual Moto ($)", placeholder: "8000", type: "number" },
+      { clave: "precio_mensual_auto", label: "Mensual Auto ($)", placeholder: "15000", type: "number" },
+      { clave: "precio_mensual_suv",  label: "Mensual SUV/Camioneta ($)", placeholder: "20000", type: "number" },
+      { clave: "interes_mensual_diario_pct", label: "Interés diario a partir del día 11 (%)", placeholder: "1.5", type: "number" },
     ],
   },
   {
-    titulo: "📅 Tarifas de estacionamiento mensual",
+    titulo: "½ Estadía — tarifas por vehículo",
     campos: [
-      { clave: "precio_mensual_completa", label: "Mensual estadía completa ($)", placeholder: "25000", type: "number" },
-      { clave: "precio_mensual_media", label: "Mensual media estadía ($)", placeholder: "15000", type: "number" },
-      { clave: "interes_mensual_diario_pct", label: "Interés diario después del día 10 (%)", placeholder: "1.5", type: "number" },
+      { clave: "precio_media_moto", label: "½ Estadía Moto ($)", placeholder: "600", type: "number" },
+      { clave: "precio_media_auto", label: "½ Estadía Auto ($)", placeholder: "1200", type: "number" },
+      { clave: "precio_media_suv",  label: "½ Estadía SUV/Camioneta ($)", placeholder: "1800", type: "number" },
+    ],
+  },
+  {
+    titulo: "🅿️ Diario — tarifas por vehículo",
+    campos: [
+      { clave: "precio_diaria_moto", label: "Diario Moto ($)", placeholder: "1000", type: "number" },
+      { clave: "precio_diaria_auto", label: "Diario Auto ($)", placeholder: "2000", type: "number" },
+      { clave: "precio_diaria_suv",  label: "Diario SUV/Camioneta ($)", placeholder: "3000", type: "number" },
+    ],
+  },
+  {
+    titulo: "🕐 Tarifa por hora",
+    campos: [
+      { clave: "precio_hora", label: "Por hora ($)", placeholder: "500", type: "number" },
     ],
   },
 ];

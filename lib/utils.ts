@@ -22,17 +22,37 @@ export function formatMonto(monto: number | string): string {
 
 export function labelTipoEstacionamiento(tipo: string): string {
   const labels: Record<string, string> = {
-    hora:             "Por hora",
-    diaria:           "Estadía diaria",
-    media_diaria:     "Media estadía diaria",
-    mensual_completa: "Mensual estadía completa",
+    // Mensual por vehículo
+    mensual_moto: "Mensual · Moto",
+    mensual_auto: "Mensual · Auto",
+    mensual_suv:  "Mensual · SUV/Camioneta",
+    // ½ Estadía por vehículo
+    media_moto: "½ Estadía · Moto",
+    media_auto: "½ Estadía · Auto",
+    media_suv:  "½ Estadía · SUV/Camioneta",
+    // Diario por vehículo
+    diaria_moto: "Diario · Moto",
+    diaria_auto: "Diario · Auto",
+    diaria_suv:  "Diario · SUV/Camioneta",
+    // Por hora (sin diferenciación de vehículo)
+    hora: "Por hora",
+    // Legacy (backward compat)
+    mensual_completa: "Mensual completa",
     mensual_media:    "Mensual media estadía",
-    // legacy
+    diaria:           "Estadía diaria",
+    media_diaria:     "½ Estadía diaria",
     fraccion:         "Por minuto",
     completa:         "Estadía completa",
     media:            "Media estadía",
   };
   return labels[tipo] ?? tipo;
+}
+
+export function vehiculoDeEstacionamiento(tipo: string): string {
+  if (tipo.endsWith("_moto")) return "Moto";
+  if (tipo.endsWith("_auto")) return "Auto";
+  if (tipo.endsWith("_suv"))  return "SUV/Camioneta";
+  return "";
 }
 
 export function labelServicio(servicio: string): string {
