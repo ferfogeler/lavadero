@@ -7,7 +7,7 @@ import { Toast, useToast } from "@/components/Toast";
 import { EstadoBadge } from "@/components/Badge";
 import { Spinner } from "@/components/Spinner";
 import { CalendarioMini } from "@/components/CalendarioMini";
-import { labelTipoVehiculo } from "@/lib/utils";
+import { labelTipoVehiculo, formatMonto } from "@/lib/utils";
 
 interface Turno {
   id: number;
@@ -46,6 +46,10 @@ export default function EmpleadoTurnosPage() {
   const [nuevoCelular, setNuevoCelular] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [nuevoStep, setNuevoStep] = useState<1 | 2 | 3>(1);
+  const [configsLavado, setConfigsLavado] = useState<Record<string, { precio: number; duracion_minutos: number }>>({});
+  const [urlBase, setUrlBase] = useState("http://localhost:3000");
+  const [whatsappLavadero, setWhatsappLavadero] = useState("3765061400");
+  const [whatsappPendiente, setWhatsappPendiente] = useState<{ url: string; titulo: string } | null>(null);
 
   const cargarTurnos = useCallback(async () => {
     setLoading(true);
@@ -64,6 +68,19 @@ export default function EmpleadoTurnosPage() {
   }, [vista, fechaBase]);
 
   useEffect(() => { cargarTurnos(); }, [cargarTurnos]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/configuracion/lavado").then((r) => r.json()),
+      fetch("/api/configuracion/general").then((r) => r.json()),
+    ]).then(([lavado, general]) => {
+      const cfg: Record<string, { precio: number; duracion_minutos: number }> = {};
+      for (const c of lavado) cfg[c.tipo_vehiculo] = c;
+      setConfigsLavado(cfg);
+      setUrlBase(general.url_base || "http://localhost:3000");
+      setWhatsappLavadero(general.whatsapp_lavadero || "3765061400");
+    });
+  }, []);
 
   const cargarSlotsNuevo = async (fecha: Date, tipo: string) => {
     const f = format(fecha, "yyyy-MM-dd");
@@ -110,9 +127,30 @@ export default function EmpleadoTurnosPage() {
       }),
     });
     if (res.ok) {
+      const turno = await res.json();
       show("Turno creado", "success");
       setModalNuevo(false);
       setNuevoStep(1);
+
+      // WhatsApp al cliente si tiene celular
+      const celularDestino = nuevoCelular.replace(/\D/g, "");
+      if (celularDestino) {
+        const enlace = `${urlBase}/turno/${turno.tokenModificacion}`;
+        const fechaFmt = format(nuevoFecha!, "dd/MM/yyyy");
+        const precio = configsLavado[nuevoTipo]?.precio;
+        const texto = encodeURIComponent(
+          `🚿 *¡Turno confirmado!*\n\n` +
+          `👋 Hola *${nuevoNombre} ${nuevoApellido}*\n` +
+          `🚗 *Patente:* ${nuevoPatente}\n` +
+          `🏎️ *Vehículo:* ${labelTipoVehiculo(nuevoTipo)}\n` +
+          `📅 *Fecha:* ${fechaFmt}\n` +
+          `⏰ *Hora:* ${nuevoHora}\n` +
+          (precio ? `💰 *Precio:* ${formatMonto(precio)}\n` : "") +
+          `\n🔗 *Modificar o cancelar tu turno:*\n${enlace}`
+        );
+        setWhatsappPendiente({ url: `https://wa.me/${celularDestino}?text=${texto}`, titulo: "Enviar confirmación al cliente" });
+      }
+
       setNuevoPatente(""); setNuevoNombre(""); setNuevoApellido(""); setNuevoCelular("");
       setNuevoFecha(null); setNuevoHora(null);
       cargarTurnos();
@@ -295,15 +333,23 @@ export default function EmpleadoTurnosPage() {
             <div>
               <p className="text-sm font-medium text-gray-700 mb-3">Tipo de vehículo:</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                {["auto", "camioneta", "suv", "moto"].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => { setNuevoTipo(t); if (nuevoFecha) cargarSlotsNuevo(nuevoFecha, t); }}
-                    className={`p-3 border-2 rounded-xl text-sm font-medium transition ${nuevoTipo === t ? "border-blue-500 bg-blue-50 text-blue-700" : "hover:border-gray-300"}`}
-                  >
-                    {labelTipoVehiculo(t)}
-                  </button>
-                ))}
+                {(["auto", "camioneta", "suv", "moto"] as const).map((t) => {
+                  const cfg = configsLavado[t];
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => { setNuevoTipo(t); if (nuevoFecha) cargarSlotsNuevo(nuevoFecha, t); }}
+                      className={`p-3 border-2 rounded-xl text-left transition ${nuevoTipo === t ? "border-blue-500 bg-blue-50 text-blue-700" : "hover:border-gray-300"}`}
+                    >
+                      <div className="text-sm font-semibold">{labelTipoVehiculo(t)}</div>
+                      {cfg && (
+                        <div className="text-xs mt-0.5 text-gray-500">
+                          {formatMonto(cfg.precio)} · {cfg.duracion_minutos} min
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
               <button onClick={() => setNuevoStep(2)} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 font-medium">
                 Siguiente →
@@ -377,6 +423,27 @@ export default function EmpleadoTurnosPage() {
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* Modal WhatsApp (compatible iOS) */}
+      <Modal open={!!whatsappPendiente} onClose={() => setWhatsappPendiente(null)} title="Enviar WhatsApp">
+        {whatsappPendiente && (
+          <div className="space-y-4 text-center">
+            <p className="text-gray-600 text-sm">Tocá el botón para enviarle la confirmación al cliente.</p>
+            <a
+              href={whatsappPendiente.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWhatsappPendiente(null)}
+              className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3 font-semibold text-lg transition"
+            >
+              💬 {whatsappPendiente.titulo}
+            </a>
+            <button onClick={() => setWhatsappPendiente(null)} className="w-full text-sm text-gray-400 hover:text-gray-600">
+              Omitir
+            </button>
+          </div>
+        )}
       </Modal>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={hide} />}
