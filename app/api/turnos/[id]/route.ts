@@ -55,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           monto: config.precio,
           descripcion: `Lavado ${turno.tipo_vehiculo} - ${turno.patente || "s/patente"}`,
           turnoId: turno.id,
+          fecha: turno.fecha, // usar la fecha del turno, no la de hoy
         },
       });
     }
