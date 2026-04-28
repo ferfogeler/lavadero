@@ -1358,18 +1358,6 @@ export default function CajaPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-2">
-                {estado !== "completado" && (
-                  <button onClick={() => handleCambiarEstadoTurno(turnoRealId, "completado")} disabled={guardandoTurno}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium">
-                    ✅ Marcar como completado
-                  </button>
-                )}
-                {estado !== "confirmado" && estado !== "cancelado" && (
-                  <button onClick={() => handleCambiarEstadoTurno(turnoRealId, "confirmado")} disabled={guardandoTurno}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium">
-                    🔄 Volver a confirmado
-                  </button>
-                )}
                 {estado !== "cancelado" && (
                   <button onClick={() => handleCambiarEstadoTurno(turnoRealId, "cancelado")} disabled={guardandoTurno}
                     className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white rounded-xl py-2.5 font-medium">
