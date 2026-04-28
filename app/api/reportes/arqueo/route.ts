@@ -60,9 +60,11 @@ export async function GET(req: NextRequest) {
   });
 
   type TodoItem = { fecha: Date | string; tipo: string; monto: string | number | { toString(): string } };
-  type MovRow = { tipo: string; horaSalida: Date | string | null };
+  type MovRow = { tipo: string; horaEntrada: Date | string | null; horaSalida: Date | string | null };
+  // Exclude daily parkings that are still open (have horaEntrada but no horaSalida).
+  // Monthly payments (horaEntrada=null, horaSalida=null) must NOT be filtered out.
   const todos: TodoItem[] = [
-    ...movimientos.filter((m: MovRow) => !(m.tipo === "estacionamiento" && !m.horaSalida)),
+    ...movimientos.filter((m: MovRow) => !(m.tipo === "estacionamiento" && m.horaEntrada && !m.horaSalida)),
     ...turnosVirtuales,
   ].sort((a: TodoItem, b: TodoItem) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 

@@ -117,8 +117,13 @@ export default function CajaPage() {
   const [mesMensual, setMesMensual] = useState(new Date().getMonth() + 1);
   const [anioMensual, setAnioMensual] = useState(new Date().getFullYear());
   const [modalCobrarMensual, setModalCobrarMensual] = useState<EstacionamientoMensual | null>(null);
+  const [modalEditarMensual, setModalEditarMensual] = useState<EstacionamientoMensual | null>(null);
+  const [modalEliminarMensual, setModalEliminarMensual] = useState<EstacionamientoMensual | null>(null);
+  const [editMontoMensual, setEditMontoMensual] = useState("");
   const [generandoMes, setGenerandoMes] = useState(false);
   const [cobrandoMensual, setCobrandoMensual] = useState(false);
+  const [guardandoEditMensual, setGuardandoEditMensual] = useState(false);
+  const [eliminandoMensual, setEliminandoMensual] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -489,9 +494,47 @@ export default function CajaPage() {
     setCobrandoMensual(false);
   };
 
+  const handleEditarMensual = async () => {
+    if (!modalEditarMensual) return;
+    setGuardandoEditMensual(true);
+    const res = await fetch(`/api/estacionamiento-mensual/${modalEditarMensual.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ editarMonto: true, monto: parseFloat(editMontoMensual) }),
+    });
+    if (res.ok) {
+      show("Monto actualizado", "success");
+      setModalEditarMensual(null);
+      cargarMensuales();
+      if (tabActiva === "movimientos") cargarMovimientos();
+    } else {
+      show("Error al actualizar", "error");
+    }
+    setGuardandoEditMensual(false);
+  };
+
+  const handleEliminarMensual = async () => {
+    if (!modalEliminarMensual) return;
+    setEliminandoMensual(true);
+    const res = await fetch(`/api/estacionamiento-mensual/${modalEliminarMensual.id}`, { method: "DELETE" });
+    if (res.ok) {
+      show("Estadía eliminada", "success");
+      setModalEliminarMensual(null);
+      cargarMensuales();
+      cargarMovimientos();
+    } else {
+      show("Error al eliminar", "error");
+    }
+    setEliminandoMensual(false);
+  };
+
   // ── Totales ───────────────────────────────────────────────────────────
+  // Include: lavado/ingreso, completed daily parkings (horaSalida set), and monthly payments (no horaEntrada)
   const totalIngresos = movimientos
-    .filter((m) => ["lavado", "ingreso"].includes(m.tipo) || (m.tipo === "estacionamiento" && m.horaSalida))
+    .filter((m) =>
+      ["lavado", "ingreso"].includes(m.tipo) ||
+      (m.tipo === "estacionamiento" && (m.horaSalida || !m.horaEntrada))
+    )
     .reduce((a, m) => a + parseFloat(m.monto), 0);
 
   const totalEgresos = movimientos
@@ -636,7 +679,7 @@ export default function CajaPage() {
                       )}
                     </td>
                     <td className={`px-4 py-3 text-right font-semibold ${["egreso", "gasto"].includes(m.tipo) ? "text-red-600" : "text-gray-900"}`}>
-                      {m.tipo === "estacionamiento" && !m.horaSalida ? (
+                      {m.tipo === "estacionamiento" && m.horaEntrada && !m.horaSalida ? (
                         <span className="text-yellow-600 text-xs">En curso</span>
                       ) : (
                         formatMonto(parseFloat(m.monto))
@@ -649,7 +692,7 @@ export default function CajaPage() {
                             Gestionar
                           </button>
                         )}
-                        {m.tipo === "estacionamiento" && !m.horaSalida && (
+                        {m.tipo === "estacionamiento" && m.horaEntrada && !m.horaSalida && (
                           <button onClick={() => setModalFinalizar(m)} className="text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5">
                             Finalizar
                           </button>
@@ -798,14 +841,32 @@ export default function CajaPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {m.estado === "pendiente" && (
-                            <button
-                              onClick={() => setModalCobrarMensual(m)}
-                              className="text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-3 py-1.5 font-medium"
-                            >
-                              Cobrar
-                            </button>
-                          )}
+                          <div className="flex justify-center gap-1 flex-wrap">
+                            {m.estado === "pendiente" && (
+                              <button
+                                onClick={() => setModalCobrarMensual(m)}
+                                className="text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-3 py-1.5 font-medium"
+                              >
+                                Cobrar
+                              </button>
+                            )}
+                            {isAdmin && m.estado === "pagado" && (
+                              <button
+                                onClick={() => { setModalEditarMensual(m); setEditMontoMensual(m.montoPagado ?? ""); }}
+                                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg px-2 py-1.5 font-medium"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button
+                                onClick={() => setModalEliminarMensual(m)}
+                                className="text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded-lg px-2 py-1.5 font-medium"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1093,7 +1154,7 @@ export default function CajaPage() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Servicio</span>
-                  <span>{modalCobrarMensual.tipo === "mensual_completa" ? "Estadía completa" : "Media estadía"}</span>
+                  <span>{labelTipoEstacionamiento(modalCobrarMensual.tipo)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Período</span>
@@ -1128,6 +1189,50 @@ export default function CajaPage() {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* Modal editar monto mensual (admin) */}
+      <Modal open={!!modalEditarMensual} onClose={() => setModalEditarMensual(null)} title="Editar monto mensual">
+        {modalEditarMensual && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 space-y-1">
+              <div><span className="font-mono font-bold">{modalEditarMensual.patente}</span>{modalEditarMensual.cliente && ` — ${modalEditarMensual.cliente.nombre} ${modalEditarMensual.cliente.apellido}`}</div>
+              <div>{labelTipoEstacionamiento(modalEditarMensual.tipo)} · {MESES_LABEL[modalEditarMensual.mes - 1]} {modalEditarMensual.anio}</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nuevo monto *</label>
+              <input type="number" value={editMontoMensual} onChange={(e) => setEditMontoMensual(e.target.value)} min="0"
+                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <button onClick={handleEditarMensual} disabled={guardandoEditMensual || !editMontoMensual}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl py-3 font-medium">
+              {guardandoEditMensual ? <Spinner size="sm" /> : "Guardar cambios"}
+            </button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal eliminar mensual (admin) */}
+      <Modal open={!!modalEliminarMensual} onClose={() => setModalEliminarMensual(null)} title="Eliminar estadía mensual">
+        {modalEliminarMensual && (
+          <div className="space-y-4">
+            <div className="bg-red-50 rounded-xl p-4 text-sm text-red-700 space-y-1">
+              <p className="font-semibold">¿Eliminar esta estadía?</p>
+              <p className="font-mono font-bold">{modalEliminarMensual.patente}</p>
+              <p>{labelTipoEstacionamiento(modalEliminarMensual.tipo)} · {MESES_LABEL[modalEliminarMensual.mes - 1]} {modalEliminarMensual.anio}</p>
+              {modalEliminarMensual.estado === "pagado" && (
+                <p className="text-orange-700 font-medium mt-2">⚠️ Estaba pagada — también se eliminará el movimiento de caja.</p>
+              )}
+              <p className="text-xs text-red-400 mt-2">Esta acción no se puede deshacer.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setModalEliminarMensual(null)} className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl py-3 font-medium">Cancelar</button>
+              <button onClick={handleEliminarMensual} disabled={eliminandoMensual} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white rounded-xl py-3 font-medium">
+                {eliminandoMensual ? <Spinner size="sm" /> : "Sí, eliminar"}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Modal editar movimiento (admin) */}
