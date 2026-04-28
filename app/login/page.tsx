@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Spinner } from "@/components/Spinner";
@@ -66,12 +66,39 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const [cfg, setCfg] = useState<Record<string, string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("cfg_general");
+        if (cached) return JSON.parse(cached);
+      } catch { /* noop */ }
+    }
+    return {};
+  });
+
+  useEffect(() => {
+    fetch("/api/configuracion/general")
+      .then((r) => r.json())
+      .then((data) => {
+        setCfg(data);
+        try { localStorage.setItem("cfg_general", JSON.stringify(data)); } catch { /* noop */ }
+      });
+  }, []);
+
+  const nombre = cfg.nombre_negocio || "GarageUno";
+  const logo   = cfg.logo_base64 || "";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🏎️</div>
-          <h1 className="text-2xl font-bold text-gray-900">GarageUno</h1>
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt={nombre} className="h-20 w-auto object-contain mx-auto mb-3" />
+          ) : (
+            <div className="text-5xl mb-3">🏎️</div>
+          )}
+          <h1 className="text-2xl font-bold text-gray-900">{nombre}</h1>
           <p className="text-gray-500 text-sm mt-1">Panel de gestión</p>
         </div>
         <Suspense fallback={<Spinner />}>
