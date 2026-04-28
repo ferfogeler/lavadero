@@ -110,6 +110,7 @@ export default function CajaPage() {
   const [precioDiariaAuto, setPrecioDiariaAuto] = useState(2000);
   const [precioDiariaSuv,  setPrecioDiariaSuv]  = useState(3000);
   const [interesDiarioPct, setInteresDiarioPct] = useState(1.5);
+  const [interesMediaDiarioPct, setInteresMediaDiarioPct] = useState(1.5);
 
   // ── Mensuales ─────────────────────────────────────────────────────────
   const [mensuales, setMensuales] = useState<EstacionamientoMensual[]>([]);
@@ -149,6 +150,7 @@ export default function CajaPage() {
       setPrecioDiariaAuto(parseFloat(cfg.precio_diaria_auto) || 2000);
       setPrecioDiariaSuv (parseFloat(cfg.precio_diaria_suv)  || 3000);
       setInteresDiarioPct(parseFloat(cfg.interes_mensual_diario_pct) || 1.5);
+      setInteresMediaDiarioPct(parseFloat(cfg.interes_mensual_media_diario_pct) || 1.5);
     });
   }, []);
 
@@ -250,11 +252,14 @@ export default function CajaPage() {
       mensual_completa: precioMensualAuto, mensual_media: precioMensualMediaAuto,
     };
     const precioBase = precios[m.tipo] ?? precioMensualAuto;
+    // Tasa de interés según tipo: ½ estadía usa su propia tasa, completa usa la general
+    const esMedia = m.tipo.includes("media");
+    const tasaPct = esMedia ? interesMediaDiarioPct : interesDiarioPct;
     const hoy = new Date();
     const esMesActual = m.mes === hoy.getMonth() + 1 && m.anio === hoy.getFullYear();
     const diasVencidos = esMesActual ? Math.max(0, hoy.getDate() - 10) : 0;
-    const interes = Math.round(precioBase * (interesDiarioPct / 100) * diasVencidos);
-    return { precioBase, diasVencidos, interes, total: precioBase + interes };
+    const interes = Math.round(precioBase * (tasaPct / 100) * diasVencidos);
+    return { precioBase, diasVencidos, interes, total: precioBase + interes, tasaPct };
   };
 
   // ── Helpers estacionamiento ───────────────────────────────────────────
@@ -501,7 +506,7 @@ export default function CajaPage() {
       const m = modalCobrarMensual;
       setModalCobrarMensual(null);
       if (m.cliente?.celular) {
-        const { precioBase, diasVencidos, interes } = calcularMontoMensual(m);
+        const { precioBase, diasVencidos, interes, tasaPct } = calcularMontoMensual(m);
         const tipoLabel = labelTipoEstacionamiento(m.tipo);
         const msg =
           `💳 *Pago registrado - Estacionamiento mensual*\n\n` +
@@ -510,7 +515,7 @@ export default function CajaPage() {
           `📅 *Período:* ${MESES_LABEL[m.mes - 1]} ${m.anio}\n` +
           `🅿️ *Servicio:* ${tipoLabel}\n\n` +
           `💰 *Precio base:* ${formatMonto(precioBase)}\n` +
-          (diasVencidos > 0 ? `📈 *Interés (${interesDiarioPct}% × ${diasVencidos} días):* ${formatMonto(interes)}\n` : "") +
+          (diasVencidos > 0 ? `📈 *Interés (${tasaPct}% × ${diasVencidos} días):* ${formatMonto(interes)}\n` : "") +
           `✅ *Total cobrado:* ${formatMonto(total)}\n\n` +
           `🙏 ¡Gracias por elegirnos!`;
         const numero = m.cliente.celular.replace(/\D/g, "");
@@ -1167,7 +1172,7 @@ export default function CajaPage() {
       {/* Modal cobrar mensual */}
       <Modal open={!!modalCobrarMensual} onClose={() => setModalCobrarMensual(null)} title="Cobrar estadía mensual">
         {modalCobrarMensual && (() => {
-          const { precioBase, diasVencidos, interes, total } = calcularMontoMensual(modalCobrarMensual);
+          const { precioBase, diasVencidos, interes, total, tasaPct } = calcularMontoMensual(modalCobrarMensual);
           return (
             <div className="space-y-4">
               <div className="bg-purple-50 rounded-xl p-4 space-y-2 text-sm">
@@ -1196,7 +1201,7 @@ export default function CajaPage() {
                   </div>
                   {diasVencidos > 0 ? (
                     <div className="flex justify-between text-orange-600">
-                      <span>Interés ({interesDiarioPct}% × {diasVencidos} días)</span>
+                      <span>Interés ({tasaPct}% × {diasVencidos} días)</span>
                       <span>+{formatMonto(interes)}</span>
                     </div>
                   ) : (

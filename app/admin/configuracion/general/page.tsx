@@ -41,6 +41,7 @@ const SECCIONES = [
       { clave: "precio_mensual_media_moto", label: "Mensual ½ estadía Moto ($)", placeholder: "5000", type: "number" },
       { clave: "precio_mensual_media_auto", label: "Mensual ½ estadía Auto ($)", placeholder: "9000", type: "number" },
       { clave: "precio_mensual_media_suv",  label: "Mensual ½ estadía SUV/Camioneta ($)", placeholder: "12000", type: "number" },
+      { clave: "interes_mensual_media_diario_pct", label: "Interés diario ½ estadía a partir del día 11 (%)", placeholder: "1.5", type: "number" },
     ],
   },
   {
