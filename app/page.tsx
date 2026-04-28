@@ -3,11 +3,25 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function Home() {
-  const [config, setConfig] = useState<Record<string, string>>({});
+  const [config, setConfig] = useState<Record<string, string>>(() => {
+    // Inicializar desde cache para evitar flash de valores por defecto
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("cfg_general");
+        if (cached) return JSON.parse(cached);
+      } catch { /* noop */ }
+    }
+    return {};
+  });
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetch("/api/configuracion/general").then((r) => r.json()).then(setConfig);
+    fetch("/api/configuracion/general")
+      .then((r) => r.json())
+      .then((data) => {
+        setConfig(data);
+        try { localStorage.setItem("cfg_general", JSON.stringify(data)); } catch { /* noop */ }
+      });
   }, []);
 
   const colorInicio    = config.color_fondo_inicio  || "#2563EB";
