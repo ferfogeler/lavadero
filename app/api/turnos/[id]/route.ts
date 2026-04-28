@@ -60,10 +60,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
   }
 
+  // Si se cancela, eliminar el movimiento de caja asociado
+  if (estado === "cancelado" && turno.movimiento) {
+    await prisma.movimientoCaja.delete({ where: { id: turno.movimiento.id } });
+  }
+
   return NextResponse.json(updated);
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+  const turno = await prisma.turno.findUnique({
+    where: { id: parseInt(params.id) },
+    include: { movimiento: true },
+  });
+  if (turno?.movimiento) {
+    await prisma.movimientoCaja.delete({ where: { id: turno.movimiento.id } });
+  }
   await prisma.turno.update({
     where: { id: parseInt(params.id) },
     data: { estado: "cancelado" },

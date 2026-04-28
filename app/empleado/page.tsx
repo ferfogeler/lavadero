@@ -89,7 +89,13 @@ export default function EmpleadoTurnosPage() {
     const f = format(fecha, "yyyy-MM-dd");
     const res = await fetch(`/api/turnos/disponibles?fecha=${f}&tipo=${tipo}&servicio=${servicio}`);
     const data = await res.json();
-    setNuevoSlots(data.slots || []);
+    let slots: string[] = data.slots || [];
+    // Filtrar horarios pasados usando la hora LOCAL del cliente (evita problema de UTC vs UTC-3)
+    if (f === format(new Date(), "yyyy-MM-dd")) {
+      const ahora = format(new Date(), "HH:mm");
+      slots = slots.filter((s) => s > ahora);
+    }
+    setNuevoSlots(slots);
     setNuevoHora(null);
   };
 

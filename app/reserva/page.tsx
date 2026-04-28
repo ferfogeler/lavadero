@@ -69,7 +69,13 @@ export default function ReservaPage() {
     const f = format(fecha, "yyyy-MM-dd");
     const res = await fetch(`/api/turnos/disponibles?fecha=${f}&tipo=${tipo}&servicio=${servicio}`);
     const data = await res.json();
-    setSlots(data.slots || []);
+    let slotsData: string[] = data.slots || [];
+    // Filtrar horarios pasados con hora LOCAL del cliente (evita desfase UTC vs UTC-3)
+    if (f === format(new Date(), "yyyy-MM-dd")) {
+      const ahora = format(new Date(), "HH:mm");
+      slotsData = slotsData.filter((s) => s > ahora);
+    }
+    setSlots(slotsData);
     setLoadingSlots(false);
   }, []);
 

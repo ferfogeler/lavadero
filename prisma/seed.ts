@@ -80,6 +80,9 @@ async function main() {
     { clave: "color_fondo_inicio", valor: "#2563EB" },
     { clave: "color_fondo_fin",    valor: "#4338CA" },
     { clave: "logo_base64",        valor: "" },
+    // Página de inicio
+    { clave: "leyenda_inicio",     valor: "" },
+    { clave: "ubicacion_maps_url", valor: "" },
   ];
   for (const c of configs) {
     await prisma.configuracionGeneral.upsert({

@@ -10,10 +10,17 @@ export default function Home() {
     fetch("/api/configuracion/general").then((r) => r.json()).then(setConfig);
   }, []);
 
-  const colorInicio   = config.color_fondo_inicio || "#2563EB";
-  const colorFin      = config.color_fondo_fin    || "#4338CA";
-  const logo          = config.logo_base64;
-  const nombreNegocio = config.nombre_negocio     || "GarageUno";
+  const colorInicio    = config.color_fondo_inicio  || "#2563EB";
+  const colorFin       = config.color_fondo_fin     || "#4338CA";
+  const logo           = config.logo_base64;
+  const nombreNegocio  = config.nombre_negocio      || "GarageUno";
+  const leyenda        = config.leyenda_inicio       || "";
+  const mapsUrl        = config.ubicacion_maps_url  || "";
+  const whatsapp       = config.whatsapp_lavadero   || "";
+
+  const waUrl = whatsapp
+    ? `https://wa.me/${whatsapp.replace(/\D/g, "")}`
+    : "";
 
   return (
     <div
@@ -32,7 +39,6 @@ export default function Home() {
 
         {menuOpen && (
           <>
-            {/* Overlay para cerrar al hacer clic afuera */}
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
             <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl overflow-hidden min-w-[220px] z-20 border border-gray-100">
               <Link
@@ -56,25 +62,65 @@ export default function Home() {
       </div>
 
       {/* ── Contenido central ── */}
-      <div className="text-center text-white max-w-md">
+      <div className="text-center text-white max-w-md w-full">
+
+        {/* Logo */}
         <div className="mb-6 flex justify-center">
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={nombreNegocio} className="h-28 w-auto object-contain drop-shadow-lg" />
+            <img
+              src={logo}
+              alt={nombreNegocio}
+              className="h-48 w-auto object-contain drop-shadow-lg"
+            />
           ) : (
-            <span className="text-8xl">🏎️</span>
+            <span className="text-9xl">🏎️</span>
           )}
         </div>
 
-        <h1 className="text-4xl font-bold mb-3">{nombreNegocio}</h1>
-        <p className="text-white/70 mb-10 text-lg">Sistema de gestión de lavado y estacionamiento</p>
+        <h1 className="text-4xl font-bold mb-2">{nombreNegocio}</h1>
+        <p className="text-white/70 mb-2 text-lg">Sistema de gestión de lavado y estacionamiento</p>
 
-        <Link
-          href="/reserva"
-          className="block bg-white text-blue-700 hover:bg-blue-50 rounded-2xl py-4 font-semibold text-lg transition shadow-lg"
-        >
-          🚗 Reservar turno de lavado
-        </Link>
+        {/* Leyenda opcional */}
+        {leyenda && (
+          <p className="text-white/90 text-sm mb-6 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+            {leyenda}
+          </p>
+        )}
+
+        <div className={`flex flex-col gap-3 ${leyenda ? "" : "mt-8"}`}>
+          {/* Reservar */}
+          <Link
+            href="/reserva"
+            className="block bg-white text-blue-700 hover:bg-blue-50 rounded-2xl py-4 font-semibold text-lg transition shadow-lg"
+          >
+            🚗 Reservar turno de lavado
+          </Link>
+
+          {/* Como llegar */}
+          {mapsUrl && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-2xl py-3.5 font-semibold text-base transition shadow-md border border-white/30"
+            >
+              📍 Cómo llegar
+            </a>
+          )}
+
+          {/* WhatsApp */}
+          {waUrl && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white rounded-2xl py-3.5 font-semibold text-base transition shadow-md"
+            >
+              💬 Contactar por WhatsApp
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );

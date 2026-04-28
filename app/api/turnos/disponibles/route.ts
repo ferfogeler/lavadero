@@ -41,15 +41,7 @@ export async function GET(req: NextRequest) {
     fin: t.hora_fin.toISOString().slice(11, 16),
   }));
 
-  let slots = generarSlotsDisponibles(apertura, cierre, config.duracion_minutos, ocupados);
-
-  // Si es hoy, filtrar slots que ya pasaron (mostrar solo desde ahora en adelante)
-  const hoy = new Date();
-  const fechaLocal = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
-  if (fecha === fechaLocal) {
-    const horaActual = `${String(hoy.getHours()).padStart(2, "0")}:${String(hoy.getMinutes()).padStart(2, "0")}`;
-    slots = slots.filter((s) => s > horaActual);
-  }
-
+  const slots = generarSlotsDisponibles(apertura, cierre, config.duracion_minutos, ocupados);
+  // Nota: el filtrado de horarios pasados se hace en el cliente para respetar la zona horaria local (UTC-3).
   return NextResponse.json({ slots, duracion: config.duracion_minutos, precio: config.precio });
 }

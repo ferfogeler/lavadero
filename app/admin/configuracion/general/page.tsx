@@ -8,8 +8,15 @@ const SECCIONES = [
     titulo: "🏪 Datos del negocio",
     campos: [
       { clave: "nombre_negocio", label: "Nombre del negocio", placeholder: "GarageUno", type: "text" },
-      { clave: "whatsapp_lavadero", label: "WhatsApp del lavadero", placeholder: "3765061400", type: "text" },
+      { clave: "whatsapp_lavadero", label: "WhatsApp (número, sin +54 ni 0)", placeholder: "3765061400", type: "text" },
       { clave: "url_base", label: "URL base del sistema", placeholder: "https://milavadero.easypanel.host", type: "url" },
+    ],
+  },
+  {
+    titulo: "🌐 Página de inicio — contacto y ubicación",
+    campos: [
+      { clave: "leyenda_inicio", label: "Leyenda / descripción extra (opcional)", placeholder: "Abrimos de lunes a sábado de 8 a 20 hs.", type: "text" },
+      { clave: "ubicacion_maps_url", label: "URL de Google Maps (botón Cómo llegar)", placeholder: "https://maps.google.com/?q=...", type: "url" },
     ],
   },
   {
