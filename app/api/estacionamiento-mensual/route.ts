@@ -57,19 +57,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ created, total: items.length, items });
   }
 
-  // Single creation
+  // Single creation / upsert — always returns the estadía (new or existing)
   const { patente, tipo, mes, anio } = body;
   if (!patente || !tipo || !mes || !anio) {
     return NextResponse.json({ error: "Campos requeridos faltantes" }, { status: 400 });
   }
 
-  try {
-    const estadia = await prisma.estacionamientoMensual.create({
-      data: { patente: patente.toUpperCase(), tipo, mes, anio },
-      include: { cliente: true },
-    });
-    return NextResponse.json(estadia);
-  } catch {
-    return NextResponse.json({ error: "Ya existe una estadía para esa patente en este mes" }, { status: 409 });
-  }
+  const estadia = await prisma.estacionamientoMensual.upsert({
+    where: { patente_mes_anio: { patente: patente.toUpperCase(), mes, anio } },
+    update: {},
+    create: { patente: patente.toUpperCase(), tipo, mes, anio },
+    include: { cliente: true },
+  });
+  return NextResponse.json(estadia);
 }

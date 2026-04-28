@@ -257,52 +257,82 @@ export default function CajaPage() {
     return { precioBase, diasVencidos, interes, total: precioBase + interes };
   };
 
+  // ── Helpers estacionamiento ───────────────────────────────────────────
+  const resetEstForm = () => {
+    setEstPatente(""); setEstCliente(null); setEstFlujo("diario"); setEstSubtipo("completa"); setEstVehiculo("auto");
+    setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular("");
+  };
+
   // ── Handlers estacionamiento ──────────────────────────────────────────
   const handleGuardarEstacionamiento = async () => {
     if (!estPatente) { show("La patente es obligatoria", "error"); return; }
     setGuardandoEst(true);
 
-    const tipoVehiculoDB = estVehiculo; // "moto" | "auto" | "suv" — todos válidos en el enum
+    const tipoVehiculoDB = estVehiculo;
     const esMensual = estFlujo === "mensual";
-    const tipoMensualDB = esMensual ? tipoDescripcion : null; // e.g. "mensual_auto"
+    const tipoMensualDB = esMensual ? tipoDescripcion : null;
 
     let clienteActivo = estCliente;
 
+    // ── Registrar / actualizar cliente ────────────────────────────────
     if (estCliente) {
-      // Cliente ya registrado: si es mensual, actualizar flags mensuales
       if (esMensual) {
         await fetch("/api/clientes", {
-          method: "POST", // upsert
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            patente: estPatente,
-            nombre: estCliente.nombre,
-            apellido: estCliente.apellido,
-            celular: estCliente.celular,
-            tipo_vehiculo: estCliente.tipo_vehiculo,
-            clienteMensual: true,
-            tipoMensual: tipoMensualDB,
+            patente: estPatente, nombre: estCliente.nombre, apellido: estCliente.apellido,
+            celular: estCliente.celular, tipo_vehiculo: estCliente.tipo_vehiculo,
+            clienteMensual: true, tipoMensual: tipoMensualDB,
           }),
         });
       }
     } else if (estNuevoNombre && estNuevoApellido) {
-      // Cliente nuevo: crear con tipo de vehículo del selector de tarifa
       const resCliente = await fetch("/api/clientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patente: estPatente,
-          nombre: estNuevoNombre,
-          apellido: estNuevoApellido,
-          celular: estNuevoCelular || null,
-          tipo_vehiculo: tipoVehiculoDB,
-          clienteMensual: esMensual,
-          tipoMensual: tipoMensualDB,
+          patente: estPatente, nombre: estNuevoNombre, apellido: estNuevoApellido,
+          celular: estNuevoCelular || null, tipo_vehiculo: tipoVehiculoDB,
+          clienteMensual: esMensual, tipoMensual: tipoMensualDB,
         }),
       });
       if (resCliente.ok) clienteActivo = await resCliente.json();
     }
 
+    // ── Flujo mensual: buscar/crear estadía y abrir cobrar en el momento ──
+    if (esMensual) {
+      const mes = new Date().getMonth() + 1;
+      const anio = new Date().getFullYear();
+      const estadiaRes = await fetch("/api/estacionamiento-mensual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patente: estPatente, tipo: tipoDescripcion, mes, anio }),
+      });
+      setModalEstacionamiento(false);
+      resetEstForm();
+      if (estadiaRes.ok) {
+        const estadia = await estadiaRes.json();
+        if (estadia.estado === "pagado") {
+          show(`Estadía de ${MESES_LABEL[mes - 1]} ya estaba cobrada ✅`, "success");
+        } else {
+          // Abrir cobrar modal directamente — cobro en el momento
+          setMesMensual(mes); setAnioMensual(anio);
+          setModalCobrarMensual({
+            ...estadia,
+            cliente: estadia.cliente ?? (clienteActivo
+              ? { nombre: clienteActivo.nombre, apellido: clienteActivo.apellido, celular: clienteActivo.celular }
+              : null),
+          });
+        }
+      } else {
+        show("Error al registrar estadía mensual", "error");
+      }
+      setGuardandoEst(false);
+      return;
+    }
+
+    // ── Flujo diario: crear MovimientoCaja con horaEntrada ─────────────
     const ahora = new Date();
     const res = await fetch("/api/movimientos", {
       method: "POST",
@@ -312,6 +342,7 @@ export default function CajaPage() {
     if (res.ok) {
       show("Estacionamiento iniciado", "success");
       setModalEstacionamiento(false);
+      resetEstForm();
       if (clienteActivo?.celular) {
         const msg =
           `🅿️ *¡Ingreso registrado!*\n\n` +
@@ -324,8 +355,6 @@ export default function CajaPage() {
         const numero = clienteActivo.celular.replace(/\D/g, "");
         setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
       }
-      setEstPatente(""); setEstCliente(null); setEstFlujo("diario"); setEstSubtipo("completa"); setEstVehiculo("auto");
-      setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular("");
       cargarMovimientos();
     } else {
       show("Error al registrar estacionamiento", "error");
@@ -905,7 +934,7 @@ export default function CajaPage() {
       {/* Modal estacionamiento */}
       <Modal
         open={modalEstacionamiento}
-        onClose={() => { setModalEstacionamiento(false); setEstPatente(""); setEstCliente(null); setEstFlujo("diario"); setEstSubtipo("completa"); setEstVehiculo("auto"); setEstNuevoNombre(""); setEstNuevoApellido(""); setEstNuevoCelular(""); }}
+        onClose={() => { setModalEstacionamiento(false); resetEstForm(); }}
         title="Nuevo estacionamiento"
       >
         <div className="space-y-4">
@@ -1033,13 +1062,13 @@ export default function CajaPage() {
               <p className="text-xs text-gray-400">⏱️ Se cobra por hora. Si supera 10 min se redondea a la siguiente.</p>
             )}
             {estFlujo === "mensual" && (
-              <p className="text-xs text-blue-500">📅 El cliente quedará registrado como mensual. Sin cobro por ingreso — el abono se cobra aparte.</p>
+              <p className="text-xs text-blue-500">📅 Al confirmar se abre el cobro del abono mensual para que puedas cobrarlo en el momento.</p>
             )}
           </div>
-          <p className="text-sm text-gray-500">Se registra la hora de entrada automáticamente.</p>
+          {estFlujo === "diario" && <p className="text-sm text-gray-500">Se registra la hora de entrada automáticamente.</p>}
           <button onClick={handleGuardarEstacionamiento} disabled={guardandoEst || !estPatente}
             className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl py-3 font-medium">
-            {guardandoEst ? <Spinner size="sm" /> : "🅿️ Registrar entrada"}
+            {guardandoEst ? <Spinner size="sm" /> : estFlujo === "mensual" ? "📅 Registrar y cobrar" : "🅿️ Registrar entrada"}
           </button>
         </div>
       </Modal>
