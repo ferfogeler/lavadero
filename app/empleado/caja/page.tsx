@@ -353,7 +353,7 @@ export default function CajaPage() {
           `💳 *Tarifa:* ${labelTipoEstacionamiento(tipoDescripcion)}\n\n` +
           `✅ Te avisamos cuando retires el vehículo. ¡Gracias!`;
         const numero = clienteActivo.celular.replace(/\D/g, "");
-        setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
+        setWhatsappPendiente({ url: `https://web.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(msg)}`, titulo: "Avisar ingreso al cliente" });
       }
       cargarMovimientos();
     } else {
@@ -387,7 +387,7 @@ export default function CajaPage() {
           `💰 *Total cobrado:* ${formatMonto(total)}\n\n` +
           `🙏 ¡Gracias por elegirnos! Hasta la próxima 👋`;
         const numero = mov.cliente.celular.replace(/\D/g, "");
-        setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Avisar egreso al cliente" });
+        setWhatsappPendiente({ url: `https://web.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(msg)}`, titulo: "Avisar egreso al cliente" });
       }
       cargarMovimientos();
     } else {
@@ -514,7 +514,7 @@ export default function CajaPage() {
           `✅ *Total cobrado:* ${formatMonto(total)}\n\n` +
           `🙏 ¡Gracias por elegirnos!`;
         const numero = m.cliente.celular.replace(/\D/g, "");
-        setWhatsappPendiente({ url: `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, titulo: "Enviar recibo al cliente" });
+        setWhatsappPendiente({ url: `https://web.whatsapp.com/send?phone=${numero}&text=${encodeURIComponent(msg)}`, titulo: "Enviar recibo al cliente" });
       }
       cargarMensuales();
     } else {

@@ -157,7 +157,7 @@ export default function EmpleadoTurnosPage() {
           (cfg ? `💰 *Precio:* ${formatMonto(cfg.precio)}\n` : "") +
           `\n🔗 *Modificar o cancelar tu turno:*\n${enlace}`
         );
-        setWhatsappPendiente({ url: `https://wa.me/${celularDestino}?text=${texto}`, titulo: "Enviar confirmación al cliente" });
+        setWhatsappPendiente({ url: `https://web.whatsapp.com/send?phone=${celularDestino}&text=${texto}`, titulo: "Enviar confirmación al cliente" });
       }
 
       setNuevoPatente(""); setNuevoNombre(""); setNuevoApellido(""); setNuevoCelular("");
