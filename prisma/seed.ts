@@ -75,6 +75,10 @@ async function main() {
     { clave: "precio_diaria_suv",  valor: "3000" },
     { clave: "interes_mensual_diario_pct", valor: "1.5" },
     { clave: "url_base", valor: "http://localhost:3000" },
+    // Apariencia
+    { clave: "color_fondo_inicio", valor: "#2563EB" },
+    { clave: "color_fondo_fin",    valor: "#4338CA" },
+    { clave: "logo_base64",        valor: "" },
   ];
   for (const c of configs) {
     await prisma.configuracionGeneral.upsert({

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Toast, useToast } from "@/components/Toast";
 import { Spinner } from "@/components/Spinner";
 
@@ -71,6 +71,8 @@ export default function ConfiguracionGeneralPage() {
   const [valores, setValores] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [subiendoLogo, setSubiendoLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast, show, hide } = useToast();
 
   useEffect(() => {
@@ -92,7 +94,31 @@ export default function ConfiguracionGeneralPage() {
     setGuardando(false);
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      show("El logo no debe superar 500 KB", "error");
+      return;
+    }
+    setSubiendoLogo(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setValores((v) => ({ ...v, logo_base64: reader.result as string }));
+      setSubiendoLogo(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleQuitarLogo = () => {
+    setValores((v) => ({ ...v, logo_base64: "" }));
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  };
+
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+
+  const colorInicio = valores.color_fondo_inicio || "#2563EB";
+  const colorFin    = valores.color_fondo_fin    || "#4338CA";
 
   return (
     <div>
@@ -108,6 +134,85 @@ export default function ConfiguracionGeneralPage() {
       </div>
 
       <div className="space-y-6 max-w-2xl">
+
+        {/* ── Apariencia ── */}
+        <div className="bg-white rounded-xl shadow border p-6 space-y-6">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">🎨 Apariencia de la página de inicio</h2>
+
+          {/* Logo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Logo del negocio</label>
+            <div className="flex items-start gap-4">
+              {/* Preview */}
+              <div
+                className="w-28 h-20 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                style={{ background: `linear-gradient(to bottom right, ${colorInicio}, ${colorFin})` }}
+              >
+                {valores.logo_base64 ? (
+                  <img src={valores.logo_base64} alt="logo" className="max-h-16 max-w-full object-contain p-1" />
+                ) : (
+                  <span className="text-4xl">🏎️</span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={handleLogoChange}
+                  className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                />
+                <p className="text-xs text-gray-400">PNG, JPG, WebP o SVG · máx. 500 KB · se guarda con "Guardar cambios"</p>
+                {valores.logo_base64 && (
+                  <button onClick={handleQuitarLogo} className="text-xs text-red-500 hover:text-red-700 font-medium">
+                    × Quitar logo (usar emoji)
+                  </button>
+                )}
+                {subiendoLogo && <Spinner size="sm" />}
+              </div>
+            </div>
+          </div>
+
+          {/* Colores */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Colores del fondo (gradiente)</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Color inicio</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={colorInicio}
+                    onChange={(e) => setValores((v) => ({ ...v, color_fondo_inicio: e.target.value }))}
+                    className="w-10 h-10 rounded-lg border cursor-pointer p-0.5"
+                  />
+                  <span className="text-xs font-mono text-gray-500">{colorInicio}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Color fin</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={colorFin}
+                    onChange={(e) => setValores((v) => ({ ...v, color_fondo_fin: e.target.value }))}
+                    className="w-10 h-10 rounded-lg border cursor-pointer p-0.5"
+                  />
+                  <span className="text-xs font-mono text-gray-500">{colorFin}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview gradiente */}
+            <div
+              className="mt-3 h-8 rounded-xl w-full"
+              style={{ background: `linear-gradient(to right, ${colorInicio}, ${colorFin})` }}
+            />
+          </div>
+        </div>
+
+        {/* ── Resto de secciones ── */}
         {SECCIONES.map((seccion) => (
           <div key={seccion.titulo} className="bg-white rounded-xl shadow border p-6">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">{seccion.titulo}</h2>
