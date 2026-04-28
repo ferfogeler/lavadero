@@ -59,6 +59,7 @@ export default function Home() {
       <div className="text-center text-white max-w-md">
         <div className="mb-6 flex justify-center">
           {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt={nombreNegocio} className="h-28 w-auto object-contain drop-shadow-lg" />
           ) : (
             <span className="text-8xl">🏎️</span>

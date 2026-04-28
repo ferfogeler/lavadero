@@ -150,6 +150,7 @@ export default function ConfiguracionGeneralPage() {
                 style={{ background: `linear-gradient(to bottom right, ${colorInicio}, ${colorFin})` }}
               >
                 {valores.logo_base64 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={valores.logo_base64} alt="logo" className="max-h-16 max-w-full object-contain p-1" />
                 ) : (
                   <span className="text-4xl">🏎️</span>
@@ -164,7 +165,7 @@ export default function ConfiguracionGeneralPage() {
                   onChange={handleLogoChange}
                   className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                 />
-                <p className="text-xs text-gray-400">PNG, JPG, WebP o SVG · máx. 500 KB · se guarda con "Guardar cambios"</p>
+                <p className="text-xs text-gray-400">PNG, JPG, WebP o SVG · máx. 500 KB · se guarda con el botón Guardar cambios</p>
                 {valores.logo_base64 && (
                   <button onClick={handleQuitarLogo} className="text-xs text-red-500 hover:text-red-700 font-medium">
                     × Quitar logo (usar emoji)
