@@ -27,12 +27,20 @@ const SECCIONES = [
     ],
   },
   {
-    titulo: "📅 Tarifas de estacionamiento mensual",
+    titulo: "📅 Mensual completa — tarifas por vehículo",
     campos: [
-      { clave: "precio_mensual_moto", label: "Mensual Moto ($)", placeholder: "8000", type: "number" },
-      { clave: "precio_mensual_auto", label: "Mensual Auto ($)", placeholder: "15000", type: "number" },
-      { clave: "precio_mensual_suv",  label: "Mensual SUV/Camioneta ($)", placeholder: "20000", type: "number" },
+      { clave: "precio_mensual_moto", label: "Mensual completa Moto ($)", placeholder: "8000", type: "number" },
+      { clave: "precio_mensual_auto", label: "Mensual completa Auto ($)", placeholder: "15000", type: "number" },
+      { clave: "precio_mensual_suv",  label: "Mensual completa SUV/Camioneta ($)", placeholder: "20000", type: "number" },
       { clave: "interes_mensual_diario_pct", label: "Interés diario a partir del día 11 (%)", placeholder: "1.5", type: "number" },
+    ],
+  },
+  {
+    titulo: "📅 Mensual ½ estadía — tarifas por vehículo",
+    campos: [
+      { clave: "precio_mensual_media_moto", label: "Mensual ½ estadía Moto ($)", placeholder: "5000", type: "number" },
+      { clave: "precio_mensual_media_auto", label: "Mensual ½ estadía Auto ($)", placeholder: "9000", type: "number" },
+      { clave: "precio_mensual_media_suv",  label: "Mensual ½ estadía SUV/Camioneta ($)", placeholder: "12000", type: "number" },
     ],
   },
   {
