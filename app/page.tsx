@@ -109,19 +109,23 @@ export default function Home() {
             </a>
           )}
 
-          {/* WhatsApp */}
-          {waUrl && (
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white rounded-2xl py-3.5 font-semibold text-base transition shadow-md"
-            >
-              💬 Contactar por WhatsApp
-            </a>
-          )}
         </div>
       </div>
+
+      {/* ── Botón flotante WhatsApp ── */}
+      {waUrl && (
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-5 left-5 z-30 flex items-center gap-2 bg-green-500 hover:bg-green-400 active:scale-95 text-white rounded-full pl-4 pr-5 py-3 font-semibold text-sm shadow-xl transition-all"
+        >
+          <svg className="w-5 h-5 shrink-0" viewBox="0 0 32 32" fill="currentColor">
+            <path d="M16 2C8.268 2 2 8.268 2 16c0 2.49.664 4.824 1.822 6.837L2 30l7.352-1.793A13.93 13.93 0 0 0 16 30c7.732 0 14-6.268 14-14S23.732 2 16 2Zm0 25.6a11.56 11.56 0 0 1-5.89-1.605l-.422-.252-4.362 1.063 1.1-4.237-.275-.435A11.56 11.56 0 0 1 4.4 16C4.4 9.594 9.594 4.4 16 4.4S27.6 9.594 27.6 16 22.406 27.6 16 27.6Zm6.34-8.606c-.347-.174-2.055-1.013-2.374-1.129-.318-.116-.55-.174-.78.174-.232.347-.896 1.129-1.098 1.36-.202.232-.405.26-.752.087-.347-.174-1.463-.539-2.787-1.718-1.03-.918-1.725-2.052-1.927-2.399-.202-.347-.022-.534.152-.707.156-.155.347-.405.52-.608.174-.202.232-.347.347-.578.116-.232.058-.434-.029-.608-.087-.174-.78-1.882-1.069-2.578-.282-.678-.568-.586-.78-.597l-.664-.011c-.232 0-.608.087-.927.434-.318.347-1.215 1.187-1.215 2.894s1.244 3.357 1.417 3.588c.174.232 2.45 3.74 5.937 5.245.83.358 1.477.572 1.982.732.833.265 1.592.228 2.19.138.668-.1 2.055-.84 2.346-1.65.29-.811.29-1.507.202-1.65-.086-.145-.317-.232-.664-.405Z"/>
+          </svg>
+          WhatsApp
+        </a>
+      )}
     </div>
   );
 }
