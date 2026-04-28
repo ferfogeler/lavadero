@@ -32,8 +32,14 @@ export async function PUT(req: NextRequest, { params }: { params: { patente: str
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { patente: string } }) {
-  await prisma.cliente.delete({
-    where: { patente: params.patente.toUpperCase() },
-  });
+  const patente = params.patente.toUpperCase();
+
+  // Eliminar en cascada todos los registros relacionados antes de borrar el cliente
+  await prisma.estacionamientoMensual.deleteMany({ where: { patente } });
+  await prisma.movimientoCaja.deleteMany({ where: { patente } });
+  // Desvincular turnos (no eliminarlos, solo quitar la referencia al cliente)
+  await prisma.turno.updateMany({ where: { patente }, data: { patente: null } });
+
+  await prisma.cliente.delete({ where: { patente } });
   return NextResponse.json({ ok: true });
 }
